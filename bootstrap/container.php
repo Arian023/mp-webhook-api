@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Application\Services\IntentService;
+use App\Application\Services\IntentWebhookHandler;
+use App\Application\Services\PaymentService;
+use App\Application\Services\PaymentWebhookHandler;
+use App\Application\Services\WebhookProcessor;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\IntentController;
 use App\Http\Controllers\PaymentController;
@@ -43,6 +48,13 @@ return [
 
     MercadoPagoClient::class => autowire(MercadoPagoClient::class)
         ->constructorParameter('accessToken', $_ENV['MP_ACCESS_TOKEN']),
+
+    // Application services
+    WebhookProcessor::class => autowire(WebhookProcessor::class),
+    IntentWebhookHandler::class => autowire(IntentWebhookHandler::class),
+    PaymentWebhookHandler::class => autowire(PaymentWebhookHandler::class),
+    IntentService::class => autowire(IntentService::class),
+    PaymentService::class => autowire(PaymentService::class),
 
     // Middleware
     ErrorHandlerMiddleware::class => autowire(ErrorHandlerMiddleware::class),
