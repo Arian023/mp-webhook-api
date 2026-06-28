@@ -5,24 +5,38 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Infrastructure\Database;
+use Psr\Log\LoggerInterface;
 
 class PaymentRepository
 {
-    public function __construct(private Database $database) {}
+    public function __construct(
+        private Database $database,
+        private LoggerInterface $logger
+    ) {}
 
     public function findByPaymentId(int $paymentId): ?array
     {
-        return $this->database->getConnection()->select('payments', '*', ['payment_id' => $paymentId])->fetch() ?: null;
+        $result = $this->database->getConnection()->select('payments', '*', ['payment_id' => $paymentId])->fetch();
+        return $result ?: null;
     }
 
     public function create(array $data): int
     {
-        return (int) $this->database->getConnection()->insert('payments', $data)->rowCount();
+        $this->database->getConnection()->insert('payments', $data);
+        $id = (int) $this->database->getConnection()->id();
+        $this->logger->debug('Payment created', ['id' => $id, 'payment_id' => $data['payment_id'] ?? null]);
+        return $id;
     }
 
     public function update(int $paymentId, array $data): bool
     {
-        return $this->database->getConnection()->update('payments', $data, ['payment_id' => $paymentId])->rowCount() > 0;
+        $data['updated_by'] = 'api';
+        $changed = $this->database->getConnection()->update('payments', $data, ['payment_id' => $paymentId])->rowCount() > 0;
+
+        if ($changed) {
+            $this->logger->debug('Payment updated', ['payment_id' => $paymentId]);
+        }
+        return $changed;
     }
 
     public function insertCharges(int $paymentInternalId, int $paymentRef, array $charges): void
@@ -33,5 +47,9 @@ class PaymentRepository
                 'payment_ref' => $paymentRef,
             ]));
         }
+        $this->logger->debug('Charges inserted', [
+            'payment_id' => $paymentInternalId,
+            'count' => count($charges),
+        ]);
     }
 }

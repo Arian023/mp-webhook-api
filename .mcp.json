@@ -5,9 +5,7 @@
                 "mcp"
             ],
             "command": "lerd",
-            "env": {
-                "LERD_SITE_PATH": "/home/arian/dev/mp-webhook-api"
-            }
+            "env": {}
         }
     }
 }

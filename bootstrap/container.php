@@ -41,9 +41,8 @@ return [
     PaymentRepository::class => \DI\autowire(PaymentRepository::class),
     WebhookLogRepository::class => \DI\autowire(WebhookLogRepository::class),
 
-    MercadoPagoClient::class => function () {
-        return new MercadoPagoClient($_ENV['MP_ACCESS_TOKEN']);
-    },
+    MercadoPagoClient::class => \DI\autowire(MercadoPagoClient::class)
+        ->constructorParameter('accessToken', $_ENV['MP_ACCESS_TOKEN']),
 
     // Middleware
     ErrorHandlerMiddleware::class => \DI\autowire(ErrorHandlerMiddleware::class),
