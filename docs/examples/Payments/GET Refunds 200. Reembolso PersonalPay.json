@@ -1,0 +1,28 @@
+[
+    {
+        "id": 90000000004,
+        "payment_id": 90000000001,
+        "amount": 15,
+        "metadata": {
+            "status_detail": null
+        },
+        "source": {
+            "name": "Juan Perez",
+            "id": "1000000001",
+            "type": "collector"
+        },
+        "date_created": "2024-11-13T11:09:37.000-04:00",
+        "expiration_date": null,
+        "unique_sequence_number": null,
+        "refund_mode": "standard",
+        "adjustment_amount": 0,
+        "status": "approved",
+        "reason": null,
+        "labels": [],
+        "amount_refunded_to_payer": 15,
+        "additional_data": null,
+        "e2e_id": null,
+        "request_id": "c8ec23a3-bfa2-4cce-82a4-20bf608b078a",
+        "partition_details": []
+    }
+]

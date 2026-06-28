@@ -1,0 +1,204 @@
+{
+    "accounts_info": null,
+    "acquirer_reconciliation": [],
+    "additional_info": {
+        "tracking_id": "platform:v1-blacklabel,so:ALL,type:N/A,security:none"
+    },
+    "authorization_code": null,
+    "binary_mode": true,
+    "brand_id": "2707",
+    "build_version": "3.124.0-rc-1",
+    "call_for_authorize_id": null,
+    "captured": true,
+    "card": {},
+    "charges_details": [
+        {
+            "accounts": {
+                "from": "collector",
+                "to": "mp"
+            },
+            "amounts": {
+                "original": 657.66,
+                "refunded": 0
+            },
+            "base_amount": 67800,
+            "client_id": 0,
+            "date_created": "2025-09-17T11:41:33.000-04:00",
+            "id": "90000000003-001",
+            "last_updated": "2025-09-17T11:41:33.000-04:00",
+            "metadata": {
+                "reason": "neutral",
+                "source": "rule-engine",
+                "source_detail": "processing_fee_charge"
+            },
+            "name": "mercadopago_fee",
+            "rate": 0.97,
+            "refund_charges": [],
+            "reserve_id": null,
+            "type": "fee"
+        },
+        {
+            "accounts": {
+                "from": "collector",
+                "to": "mp"
+            },
+            "amounts": {
+                "original": 406.8,
+                "refunded": 0
+            },
+            "base_amount": 67800,
+            "client_id": 0,
+            "date_created": "2025-09-17T11:41:33.000-04:00",
+            "id": "90000000003-002",
+            "last_updated": "2025-09-17T11:41:33.000-04:00",
+            "metadata": {
+                "mov_detail": "tax_withholding_collector",
+                "mov_financial_entity": "debitos_creditos",
+                "mov_type": "expense",
+                "source": "taxes",
+                "source_detail": "",
+                "tax_id": 100000000000,
+                "tax_status": "applied",
+                "user_id": 1000000003
+            },
+            "name": "tax_withholding_collector-debitos_creditos",
+            "rate": 0.6,
+            "refund_charges": [],
+            "reserve_id": null,
+            "type": "tax"
+        }
+    ],
+    "charges_execution_info": {
+        "internal_execution": {
+            "date": "2025-09-17T11:41:33.783-04:00",
+            "execution_id": "01FAKE000000000000000002"
+        }
+    },
+    "collector_id": 1000000003,
+    "corporation_id": null,
+    "counter_currency": null,
+    "coupon_amount": 0,
+    "currency_id": "ARS",
+    "date_approved": "2025-09-17T11:41:34.000-04:00",
+    "date_created": "2025-09-17T11:41:33.000-04:00",
+    "date_last_updated": "2025-09-17T11:41:37.000-04:00",
+    "date_of_expiration": null,
+    "deduction_schema": "AHORAADMIN_3",
+    "description": "Compra Ejemplo S.A.",
+    "differential_pricing_id": null,
+    "external_reference": "000900000001-000900000001",
+    "fee_details": [
+        {
+            "amount": 657.66,
+            "fee_payer": "collector",
+            "type": "mercadopago_fee"
+        }
+    ],
+    "financing_group": null,
+    "id": 90000000003,
+    "installments": 1,
+    "integrator_id": null,
+    "issuer_id": "2005",
+    "live_mode": true,
+    "marketplace_owner": null,
+    "merchant_account_id": null,
+    "merchant_number": null,
+    "metadata": {},
+    "money_release_date": "2025-09-17T11:41:34.000-04:00",
+    "money_release_schema": null,
+    "money_release_status": "released",
+    "notification_url": null,
+    "operation_type": "regular_payment",
+    "order": {
+        "id": "90000000005",
+        "type": "mercadopago"
+    },
+    "payer": {
+        "id": "1000000004"
+    },
+    "payment_method": {
+        "id": "account_money",
+        "issuer_id": "2005",
+        "type": "account_money"
+    },
+    "payment_method_id": "account_money",
+    "payment_type_id": "account_money",
+    "platform_id": null,
+    "point_of_interaction": {
+        "application_data": {
+            "name": null,
+            "operating_system": null,
+            "version": null
+        },
+        "business_info": {
+            "branch": "QR",
+            "sub_unit": "qr",
+            "unit": "wallet"
+        },
+        "location": {
+            "source": "store",
+            "state_id": "AR-Q"
+        },
+        "transaction_data": {
+            "bank_info": {
+                "collector": {
+                    "account_holder_name": null,
+                    "account_id": null,
+                    "long_name": null,
+                    "transfer_account_id": null
+                },
+                "is_same_bank_account_owner": null,
+                "origin_bank_id": null,
+                "origin_wallet_id": null,
+                "payer": {
+                    "account_id": null,
+                    "branch": null,
+                    "external_account_id": null,
+                    "id": null,
+                    "identification": {},
+                    "is_end_consumer": null,
+                    "long_name": null
+                }
+            },
+            "bank_transfer_id": null,
+            "e2e_id": null,
+            "financial_institution": null,
+            "infringement_notification": {
+                "status": null,
+                "type": null
+            },
+            "merchant_category_code": null,
+            "qr_code": null,
+            "ticket_url": null,
+            "transaction_id": null
+        },
+        "type": "INSTORE"
+    },
+    "pos_id": "40000002",
+    "processing_mode": "aggregator",
+    "refunds": [],
+    "release_info": null,
+    "shipping_amount": 0,
+    "sponsor_id": null,
+    "statement_descriptor": null,
+    "status": "approved",
+    "status_detail": "accredited",
+    "store_id": "40000001",
+    "tags": null,
+    "taxes_amount": 0,
+    "transaction_amount": 67800,
+    "transaction_amount_refunded": 0,
+    "transaction_details": {
+        "acquirer_reference": null,
+        "bank_transfer_id": null,
+        "external_resource_url": null,
+        "financial_institution": null,
+        "installment_amount": 0,
+        "net_received_amount": 66735.54,
+        "overpaid_amount": 0,
+        "payable_deferral_period": null,
+        "payment_method_reference_id": null,
+        "total_paid_amount": 67800,
+        "transaction_id": null
+    }
+}

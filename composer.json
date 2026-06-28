@@ -1,0 +1,31 @@
+{
+    "name": "arian/mp-webhook-api",
+    "description": "Mercado Pago Point webhook processor — Slim 4",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "slim/slim": "^4",
+        "slim/psr7": "^1.7",
+        "php-di/php-di": "^7.0",
+        "php-di/slim-bridge": "^3.4",
+        "catfan/medoo": "^2.1",
+        "guzzlehttp/guzzle": "^7.9",
+        "caseyamcl/guzzle_retry_middleware": "^2.12",
+        "monolog/monolog": "^3.8",
+        "symfony/dotenv": "^7.1",
+        "nesbot/carbon": "^3.8"
+    },
+    "require-dev": {
+        "robmorgan/phinx": "*",
+        "friendsofphp/php-cs-fixer": "*",
+        "phpstan/phpstan": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

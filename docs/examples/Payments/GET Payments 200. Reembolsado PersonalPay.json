@@ -1,0 +1,281 @@
+{
+    "accounts_info": null,
+    "acquirer_reconciliation": [],
+    "additional_info": {
+        "authentication_code": null,
+        "available_balance": null,
+        "nsu_processadora": null,
+        "point_location": {
+            "city": "NEUQUEN",
+            "zip_code": "8300"
+        }
+    },
+    "amounts": {
+        "collector": {
+            "currency_id": "ARS",
+            "net_received": 13.93,
+            "transaction": 15,
+            "transaction_destination": null
+        },
+        "exchange_broker": null,
+        "payer": {
+            "currency_id": "ARS",
+            "total_paid": 15,
+            "transaction": 15,
+            "transaction_detail": [
+                {
+                    "amount": 15,
+                    "description": null,
+                    "type": "MAIN"
+                }
+            ],
+            "transaction_source": null
+        }
+    },
+    "authorization_code": "000001",
+    "binary_mode": true,
+    "brand_id": null,
+    "build_version": "3.78.0-rc-3",
+    "call_for_authorize_id": null,
+    "captured": true,
+    "card": {
+        "bin": "45000000",
+        "cardholder": {
+            "identification": {
+                "number": null,
+                "type": null
+            },
+            "name": "PAYWAVE VISA              "
+        },
+        "country": null,
+        "date_created": "2024-11-13T10:52:26.000-04:00",
+        "date_last_updated": "2024-11-13T10:52:26.000-04:00",
+        "expiration_month": 6,
+        "expiration_year": 2027,
+        "first_six_digits": "450000",
+        "id": null,
+        "last_four_digits": "0000",
+        "tags": [
+            "invalid_card_art",
+            "prepaid"
+        ]
+    },
+    "charges_details": [
+        {
+            "accounts": {
+                "from": "collector",
+                "to": "mp"
+            },
+            "amounts": {
+                "original": 0.62,
+                "refunded": 0.62
+            },
+            "client_id": 0,
+            "date_created": "2024-11-13T10:52:26.000-04:00",
+            "id": "90000000001-001",
+            "last_updated": "2024-11-13T11:09:37.000-04:00",
+            "metadata": {
+                "source": "rule-engine"
+            },
+            "name": "mercadopago_fee",
+            "refund_charges": [
+                {
+                    "amount": 0.62,
+                    "client_id": 1000000000000001,
+                    "currency_id": "ARS",
+                    "date_created": "2024-11-13T11:09:37.000-04:00",
+                    "operation": {
+                        "id": 90000000004,
+                        "type": "refund_payment"
+                    },
+                    "reserve_id": null
+                }
+            ],
+            "reserve_id": null,
+            "type": "fee"
+        },
+        {
+            "accounts": {
+                "from": "collector",
+                "to": "mp"
+            },
+            "amounts": {
+                "original": 0.45,
+                "refunded": 0.45
+            },
+            "base_amount": 15,
+            "client_id": 0,
+            "date_created": "2024-11-13T10:52:26.000-04:00",
+            "id": "90000000001-002",
+            "last_updated": "2024-11-13T11:09:37.000-04:00",
+            "metadata": {
+                "mov_detail": "tax_withholding_sirtac_noinsc",
+                "mov_financial_entity": "neuquen",
+                "mov_type": "expense",
+                "source": "taxes",
+                "tax_id": 100000000000,
+                "tax_status": "applied",
+                "user_id": 1000000001
+            },
+            "name": "tax_withholding_sirtac_noinsc-neuquen",
+            "rate": 3,
+            "refund_charges": [
+                {
+                    "amount": 0.45,
+                    "client_id": 1000000000000001,
+                    "currency_id": "ARS",
+                    "date_created": "2024-11-13T11:09:37.000-04:00",
+                    "operation": {
+                        "id": 90000000004,
+                        "type": "refund_payment"
+                    },
+                    "reserve_id": null
+                }
+            ],
+            "reserve_id": null,
+            "type": "tax"
+        }
+    ],
+    "charges_execution_info": {
+        "internal_execution": {
+            "date": "2024-11-13T10:52:26.780-04:00",
+            "execution_id": "01FAKE000000000000000000"
+        }
+    },
+    "collector_id": 1000000001,
+    "corporation_id": null,
+    "counter_currency": null,
+    "coupon_amount": 0,
+    "currency_id": "ARS",
+    "date_approved": "2024-11-13T10:52:28.000-04:00",
+    "date_created": "2024-11-13T10:52:26.000-04:00",
+    "date_last_updated": "2024-11-13T11:11:40.000-04:00",
+    "date_of_expiration": null,
+    "deduction_schema": null,
+    "description": "Venta presencial",
+    "differential_pricing_id": null,
+    "external_reference": "TestExample-00.00-2024.01.01",
+    "fee_details": [
+        {
+            "amount": 0.62,
+            "fee_payer": "collector",
+            "type": "mercadopago_fee"
+        }
+    ],
+    "financing_group": null,
+    "id": 90000000001,
+    "installments": 1,
+    "integrator_id": null,
+    "issuer_id": "1",
+    "live_mode": true,
+    "marketplace_owner": null,
+    "merchant_account_id": null,
+    "merchant_number": null,
+    "metadata": {
+        "was_pin": false,
+        "payment_intent_id": "0c2b41c8-b71d-4233-abe0-187c7b26b18d",
+        "pin_validation": "pin_not_validated",
+        "integration": "api",
+        "is_fallback": false
+    },
+    "money_release_date": "2024-11-13T11:09:39.000-04:00",
+    "money_release_schema": null,
+    "money_release_status": "released",
+    "notification_url": null,
+    "operation_type": "pos_payment",
+    "order": {},
+    "payer": {
+        "email": "ventapresencial@mercadopago.com",
+        "entity_type": null,
+        "first_name": null,
+        "id": "1000000002",
+        "identification": {
+            "number": "20000000000",
+            "type": "CUIT"
+        },
+        "last_name": null,
+        "operator_id": null,
+        "phone": {
+            "number": null,
+            "extension": null,
+            "area_code": null
+        },
+        "type": null
+    },
+    "payment_method": {
+        "data": {
+            "routing_data": {
+                "merchant_account_id": "1004"
+            }
+        },
+        "id": "visa",
+        "issuer_id": "1",
+        "type": "credit_card"
+    },
+    "payment_method_id": "visa",
+    "payment_type_id": "credit_card",
+    "platform_id": null,
+    "point_of_interaction": {
+        "type": "POINT",
+        "device": {
+            "serial_number": "SMARTPOS0000000001"
+        }
+    },
+    "pos_id": "40000002",
+    "processing_mode": "aggregator",
+    "refunds": [
+        {
+            "additional_data": null,
+            "adjustment_amount": 0,
+            "alternative_refund_mode": null,
+            "amount": 15,
+            "amount_refunded_to_other_user": null,
+            "amount_refunded_to_payer": 15,
+            "date_created": "2024-11-13T11:09:37.000-04:00",
+            "e2e_id": null,
+            "expiration_date": null,
+            "external_operations": [],
+            "external_refund_id": null,
+            "funder": null,
+            "id": 90000000004,
+            "labels": [],
+            "metadata": {
+                "status_detail": null
+            },
+            "partition_details": [],
+            "payment_id": 90000000001,
+            "reason": null,
+            "refund_mode": "standard",
+            "request_id": "c8ec23a3-bfa2-4cce-82a4-20bf608b078a",
+            "source": {
+                "id": "1000000001",
+                "name": "Juan Perez",
+                "type": "collector"
+            },
+            "status": "approved",
+            "unique_sequence_number": null
+        }
+    ],
+    "release_info": null,
+    "shipping_amount": 0,
+    "sponsor_id": null,
+    "statement_descriptor": "MERPAGO*TESTFSA",
+    "status": "refunded",
+    "status_detail": "refunded",
+    "store_id": "40000001",
+    "tags": null,
+    "taxes_amount": 0,
+    "transaction_amount": 15,
+    "transaction_amount_refunded": 15,
+    "transaction_details": {
+        "acquirer_reference": null,
+        "external_resource_url": null,
+        "financial_institution": null,
+        "installment_amount": 15,
+        "net_received_amount": 13.93,
+        "overpaid_amount": 0,
+        "payable_deferral_period": null,
+        "payment_method_reference_id": null,
+        "total_paid_amount": 15
+    }
+}

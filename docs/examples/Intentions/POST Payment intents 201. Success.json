@@ -1,0 +1,10 @@
+{
+    "id": "7f25f9aa-eea6-4f9c-bf16-a341f7123456",
+    "device_id": "INGENICO_MOVE2500__00000001",
+    "amount": 6000,
+    "additional_info": {
+        "external_reference": "000900000001-000900000001",
+        "print_on_terminal": true,
+        "ticket_number": "ABC123"
+    }
+}

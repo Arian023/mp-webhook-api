@@ -1,0 +1,12 @@
+{
+    "additional_info": {
+        "external_reference": "TestExample-00.00-2024.01.01",
+        "print_on_terminal": true,
+        "ticket_number": "Example-00.00"
+    },
+    "amount": 1500,
+    "device_id": "PAX_A910__SMARTPOS0000000001",
+    "id": "39afd045-c7e7-4466-b15c-7de1a06986e2",
+    "payment_mode": "card",
+    "state": "OPEN"
+}
