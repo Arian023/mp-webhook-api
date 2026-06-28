@@ -16,13 +16,13 @@ class BearerAuthMiddleware implements MiddlewareInterface
     {
         $authHeader = $request->getHeaderLine('Authorization');
 
-        if (empty($authHeader) || !str_starts_with($authHeader, 'Bearer ')) {
+        if ($authHeader === '' || $authHeader === '0' || !str_starts_with($authHeader, 'Bearer ')) {
             $response = new Response(401);
             $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
             return $response->withHeader('Content-Type', 'application/json');
         }
 
-        $token = substr($authHeader, 7);
+        $token = mb_substr($authHeader, 7);
         $expectedToken = $_ENV['MP_ACCESS_TOKEN'] ?? '';
 
         if ($token !== $expectedToken) {

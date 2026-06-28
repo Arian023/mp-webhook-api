@@ -7,13 +7,16 @@ use App\Http\Controllers\IntentController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\BearerAuthMiddleware;
+use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
+
+/** @var App $app */
 
 // Webhook (no auth — uses signature validation)
 $app->post('/webhook', [WebhookController::class, 'handle']);
 
 // API endpoints (bearer auth)
-$app->group('/api', function (RouteCollectorProxy $group) {
+$app->group('/api', function (RouteCollectorProxy $group): void {
     $group->post('/intents', [IntentController::class, 'create']);
     $group->get('/intents/{id}', [IntentController::class, 'get']);
     $group->delete('/intents/{id}/cancel', [IntentController::class, 'cancel']);

@@ -10,7 +10,9 @@ use Psr\Log\LoggerInterface;
 
 class WebhookController
 {
-    public function __construct(private LoggerInterface $logger) {}
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
 
     public function handle(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

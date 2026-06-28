@@ -8,8 +8,8 @@ use Carbon\Carbon;
 
 class DateHelper
 {
-    private const MP_TIMEZONE = '-04:00';
-    private const LOCAL_TIMEZONE = 'America/Buenos_Aires';
+    private const string MP_TIMEZONE = '-04:00';
+    private const string LOCAL_TIMEZONE = 'America/Buenos_Aires';
 
     public static function toLocal(string $mpDate): string
     {

@@ -10,14 +10,16 @@ use Psr\Log\LoggerInterface;
 class PaymentRepository
 {
     public function __construct(
-        private Database $database,
-        private LoggerInterface $logger
-    ) {}
+        private readonly Database $database,
+        private readonly LoggerInterface $logger
+    ) {
+    }
 
     public function findByPaymentId(int $paymentId): ?array
     {
-        $result = $this->database->getConnection()->select('payments', '*', ['payment_id' => $paymentId])->fetch();
-        return $result ?: null;
+        /** @var array|null $result */
+        $result = $this->database->getConnection()->select('payments', null, '*', ['payment_id' => $paymentId]);
+        return $result[0] ?? null;
     }
 
     public function create(array $data): int

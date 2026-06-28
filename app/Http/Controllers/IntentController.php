@@ -6,12 +6,9 @@ namespace App\Http\Controllers;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Log\LoggerInterface;
 
 class IntentController
 {
-    public function __construct(private LoggerInterface $logger) {}
-
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $response->getBody()->write(json_encode(['status' => 'pending_implementation']));

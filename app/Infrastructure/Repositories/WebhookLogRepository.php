@@ -10,9 +10,10 @@ use Psr\Log\LoggerInterface;
 class WebhookLogRepository
 {
     public function __construct(
-        private Database $database,
-        private LoggerInterface $logger
-    ) {}
+        private readonly Database $database,
+        private readonly LoggerInterface $logger
+    ) {
+    }
 
     public function log(array $data): int
     {

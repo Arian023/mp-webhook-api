@@ -8,20 +8,29 @@ use App\Infrastructure\Database;
 
 class TerminalRepository
 {
-    public function __construct(private Database $database) {}
+    public function __construct(
+        private readonly Database $database,
+    ) {
+    }
 
     public function findByExternalId(string $externalId): ?array
     {
-        return $this->database->getConnection()->select('terminals', '*', ['external_id' => $externalId])->fetch() ?: null;
+        /** @var array|null $result */
+        $result = $this->database->getConnection()->select('terminals', null, '*', ['external_id' => $externalId]);
+        return $result[0] ?? null;
     }
 
     public function findByPosId(string $posId): ?array
     {
-        return $this->database->getConnection()->select('terminals', '*', ['pos_id' => $posId])->fetch() ?: null;
+        /** @var array|null $result */
+        $result = $this->database->getConnection()->select('terminals', null, '*', ['pos_id' => $posId]);
+        return $result[0] ?? null;
     }
 
     public function findById(int $id): ?array
     {
-        return $this->database->getConnection()->select('terminals', '*', ['id' => $id])->fetch() ?: null;
+        /** @var array|null $result */
+        $result = $this->database->getConnection()->select('terminals', null, '*', ['id' => $id]);
+        return $result[0] ?? null;
     }
 }

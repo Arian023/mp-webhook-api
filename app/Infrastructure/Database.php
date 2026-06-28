@@ -12,7 +12,7 @@ class Database
 
     public function getConnection(): Medoo
     {
-        if ($this->connection === null) {
+        if (!$this->connection instanceof Medoo) {
             $this->connection = new Medoo([
                 'type' => 'mysql',
                 'host' => $_ENV['DB_HOST'] ?? 'localhost',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use Slim\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -12,7 +13,9 @@ use Psr\Log\LoggerInterface;
 
 class ErrorHandlerMiddleware implements MiddlewareInterface
 {
-    public function __construct(private LoggerInterface $logger) {}
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -25,7 +28,7 @@ class ErrorHandlerMiddleware implements MiddlewareInterface
                 'line' => $e->getLine(),
             ]);
 
-            $response = new \Slim\Psr7\Response(500);
+            $response = new Response(500);
             $response->getBody()->write(json_encode([
                 'error' => 'Internal Server Error',
                 'message' => $_ENV['APP_DEBUG'] === 'true' ? $e->getMessage() : 'Something went wrong',

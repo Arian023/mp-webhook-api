@@ -2,22 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\HealthController;
-use App\Http\Controllers\IntentController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\WebhookController;
-use App\Http\Middleware\BearerAuthMiddleware;
-use App\Http\Middleware\ErrorHandlerMiddleware;
-use App\Http\Middleware\RequestLoggerMiddleware;
+use Symfony\Component\Dotenv\Dotenv;
+use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
-use Slim\Routing\RouteCollectorProxy;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$dotenv = new Symfony\Component\Dotenv\Dotenv();
+$dotenv = new Dotenv();
 $dotenv->loadEnv(__DIR__ . '/../.env');
 
-$containerBuilder = new \DI\ContainerBuilder();
+$containerBuilder = new ContainerBuilder();
 $containerBuilder->addDefinitions(require __DIR__ . '/../bootstrap/container.php');
 $container = $containerBuilder->build();
 

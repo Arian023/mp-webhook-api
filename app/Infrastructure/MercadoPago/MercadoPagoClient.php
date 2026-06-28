@@ -8,23 +8,24 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\HandlerStack;
 use GuzzleRetry\GuzzleRetryMiddleware;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 class MercadoPagoClient
 {
-    private Client $client;
+    private readonly Client $client;
 
     public function __construct(
-        private string $accessToken,
-        private LoggerInterface $logger
+        private readonly string $accessToken,
+        private readonly LoggerInterface $logger
     ) {
         $handlerStack = HandlerStack::create();
         $handlerStack->push(GuzzleRetryMiddleware::factory([
             'max_retry_attempts' => 5,
             'retry_on_status' => [429, 500, 502, 503, 504],
             'retry_on_timeout' => true,
-            'on_retry_callback' => function (int $attemptNumber, float $delay, array $requestOptions, ?array $response) {
-                $status = $response ? $response->getStatusCode() : 'timeout';
+            'on_retry_callback' => function (int $attemptNumber, float $delay, array $requestOptions, ?ResponseInterface $response): void {
+                $status = $response instanceof ResponseInterface ? $response->getStatusCode() : 'timeout';
                 $this->logger->warning('MP API retry', [
                     'attempt' => $attemptNumber,
                     'delay' => round($delay, 2),

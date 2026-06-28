@@ -10,14 +10,16 @@ use Psr\Log\LoggerInterface;
 class IntentRepository
 {
     public function __construct(
-        private Database $database,
-        private LoggerInterface $logger
-    ) {}
+        private readonly Database $database,
+        private readonly LoggerInterface $logger
+    ) {
+    }
 
     public function findByIntentId(string $intentId): ?array
     {
-        $result = $this->database->getConnection()->select('intents', '*', ['intent_id' => $intentId])->fetch();
-        return $result ?: null;
+        /** @var array|null $result */
+        $result = $this->database->getConnection()->select('intents', null, '*', ['intent_id' => $intentId]);
+        return $result[0] ?? null;
     }
 
     public function create(array $data): int

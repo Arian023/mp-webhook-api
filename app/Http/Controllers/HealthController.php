@@ -12,9 +12,10 @@ use Psr\Log\LoggerInterface;
 class HealthController
 {
     public function __construct(
-        private Database $database,
-        private LoggerInterface $logger
-    ) {}
+        private readonly Database $database,
+        private readonly LoggerInterface $logger
+    ) {
+    }
 
     public function check(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

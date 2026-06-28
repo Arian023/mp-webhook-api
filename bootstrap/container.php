@@ -20,6 +20,8 @@ use Monolog\Level;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 
+use function DI\autowire;
+
 return [
     LoggerInterface::class => function () {
         $logger = new Logger('mp-webhook');
@@ -32,26 +34,24 @@ return [
         return $logger;
     },
 
-    Database::class => function () {
-        return new Database();
-    },
+    Database::class => fn () => new Database(),
 
-    TerminalRepository::class => \DI\autowire(TerminalRepository::class),
-    IntentRepository::class => \DI\autowire(IntentRepository::class),
-    PaymentRepository::class => \DI\autowire(PaymentRepository::class),
-    WebhookLogRepository::class => \DI\autowire(WebhookLogRepository::class),
+    TerminalRepository::class => autowire(TerminalRepository::class),
+    IntentRepository::class => autowire(IntentRepository::class),
+    PaymentRepository::class => autowire(PaymentRepository::class),
+    WebhookLogRepository::class => autowire(WebhookLogRepository::class),
 
-    MercadoPagoClient::class => \DI\autowire(MercadoPagoClient::class)
+    MercadoPagoClient::class => autowire(MercadoPagoClient::class)
         ->constructorParameter('accessToken', $_ENV['MP_ACCESS_TOKEN']),
 
     // Middleware
-    ErrorHandlerMiddleware::class => \DI\autowire(ErrorHandlerMiddleware::class),
-    RequestLoggerMiddleware::class => \DI\autowire(RequestLoggerMiddleware::class),
-    BearerAuthMiddleware::class => \DI\autowire(BearerAuthMiddleware::class),
+    ErrorHandlerMiddleware::class => autowire(ErrorHandlerMiddleware::class),
+    RequestLoggerMiddleware::class => autowire(RequestLoggerMiddleware::class),
+    BearerAuthMiddleware::class => autowire(BearerAuthMiddleware::class),
 
     // Controllers
-    HealthController::class => \DI\autowire(HealthController::class),
-    WebhookController::class => \DI\autowire(WebhookController::class),
-    IntentController::class => \DI\autowire(IntentController::class),
-    PaymentController::class => \DI\autowire(PaymentController::class),
+    HealthController::class => autowire(HealthController::class),
+    WebhookController::class => autowire(WebhookController::class),
+    IntentController::class => autowire(IntentController::class),
+    PaymentController::class => autowire(PaymentController::class),
 ];
