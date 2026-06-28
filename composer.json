@@ -3,22 +3,22 @@
     "description": "Mercado Pago Point webhook processor — Slim 4",
     "type": "project",
     "require": {
-        "php": "^8.4",
-        "slim/slim": "^4",
-        "slim/psr7": "^1.7",
+        "php": "^8.3 || ^8.4 || ^8.5",
+        "caseyamcl/guzzle_retry_middleware": "^2.12",
+        "catfan/medoo": "^2.4",
+        "guzzlehttp/guzzle": "^7.9",
+        "monolog/monolog": "^3.8",
+        "nesbot/carbon": "^3.8",
         "php-di/php-di": "^7.0",
         "php-di/slim-bridge": "^3.4",
-        "catfan/medoo": "^2.1",
-        "guzzlehttp/guzzle": "^7.9",
-        "caseyamcl/guzzle_retry_middleware": "^2.12",
-        "monolog/monolog": "^3.8",
-        "symfony/dotenv": "^7.1",
-        "nesbot/carbon": "^3.8"
+        "slim/psr7": "^1.7",
+        "slim/slim": "^4",
+        "symfony/dotenv": "^7.4"
     },
     "require-dev": {
-        "robmorgan/phinx": "*",
-        "friendsofphp/php-cs-fixer": "*",
-        "phpstan/phpstan": "*"
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.2",
+        "robmorgan/phinx": "^0.16"
     },
     "autoload": {
         "psr-4": {
