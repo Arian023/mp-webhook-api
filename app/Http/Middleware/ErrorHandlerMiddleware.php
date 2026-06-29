@@ -11,6 +11,11 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Catches unhandled exceptions and returns JSON error responses.
+ *
+ * Respects APP_DEBUG for stack traces. Logs errors with full context.
+ */
 class ErrorHandlerMiddleware implements MiddlewareInterface
 {
     public function __construct(private readonly LoggerInterface $logger)

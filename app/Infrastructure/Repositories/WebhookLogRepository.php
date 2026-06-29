@@ -7,6 +7,13 @@ namespace App\Infrastructure\Repositories;
 use App\Infrastructure\Database;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Writes to the webhook_logs table.
+ *
+ * Every incoming webhook is logged with its full payload, signature
+ * validation result, and response code. Useful for debugging missed
+ * or duplicate notifications.
+ */
 class WebhookLogRepository
 {
     public function __construct(

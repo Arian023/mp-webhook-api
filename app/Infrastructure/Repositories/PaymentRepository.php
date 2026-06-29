@@ -7,6 +7,12 @@ namespace App\Infrastructure\Repositories;
 use App\Infrastructure\Database;
 use Psr\Log\LoggerInterface;
 
+/**
+ * CRUD for the payments table + charge inserts.
+ *
+ * Stores the full payment record from the MP API (card details, amounts,
+ * timestamps) and the nested charges_details[] breakdown (fees + taxes).
+ */
 class PaymentRepository
 {
     public function __construct(

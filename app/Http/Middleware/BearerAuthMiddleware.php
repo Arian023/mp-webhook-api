@@ -10,6 +10,12 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Psr7\Response;
 
+/**
+ * Bearer token authentication for /api/* routes.
+ *
+ * Compares the Authorization header against MP_ACCESS_TOKEN env var.
+ * The /webhook route is excluded — it uses HMAC signature validation instead.
+ */
 class BearerAuthMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

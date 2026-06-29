@@ -7,6 +7,13 @@ namespace App\Infrastructure\Repositories;
 use App\Infrastructure\Database;
 use Psr\Log\LoggerInterface;
 
+/**
+ * CRUD for the intents table.
+ *
+ * Each row represents a payment intent UUID from MP. Tracks the intent
+ * lifecycle (OPEN → FINISHED/CANCELED/ABANDONED/ERROR) and links to the
+ * payment record once the terminal completes the transaction.
+ */
 class IntentRepository
 {
     public function __construct(

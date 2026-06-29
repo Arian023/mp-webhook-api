@@ -10,6 +10,9 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Logs method, path, IP, and response time for every request.
+ */
 class RequestLoggerMiddleware implements MiddlewareInterface
 {
     public function __construct(private readonly LoggerInterface $logger)

@@ -8,6 +8,13 @@ use App\Application\Services\WebhookProcessor;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+/**
+ * POST /webhook — Mercado Pago notification endpoint.
+ *
+ * Delegates all processing to WebhookProcessor. Always returns 200 so MP
+ * stops retrying. No bearer auth — the webhook uses HMAC-SHA256 signature
+ * validation instead.
+ */
 class WebhookController
 {
     public function __construct(

@@ -6,6 +6,13 @@ namespace App\Infrastructure\Repositories;
 
 use App\Infrastructure\Database;
 
+/**
+ * Reads from the terminals table.
+ *
+ * Terminals are Point devices registered in MP, identified by external_id
+ * (e.g. "PAX_A910__SMARTPOS1495319707") or pos_id. Used to resolve the
+ * internal terminal_id FK when storing payments.
+ */
 class TerminalRepository
 {
     public function __construct(

@@ -10,6 +10,13 @@ use App\Infrastructure\Repositories\IntentRepository;
 use App\Infrastructure\Repositories\PaymentRepository;
 use Psr\Log\LoggerInterface;
 
+/**
+ * CRUD operations for payment intents via the legacy Point Integration API.
+ *
+ * Used by the /api/intents endpoints. Each method calls the MP API,
+ * persists the result in the local DB, and returns the MP response.
+ * The legacy API is: POST/GET/DELETE /point/integration-api/...
+ */
 class IntentService
 {
     public function __construct(

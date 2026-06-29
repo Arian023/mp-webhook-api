@@ -11,6 +11,13 @@ use GuzzleRetry\GuzzleRetryMiddleware;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * HTTP client for the Mercado Pago API.
+ *
+ * Wraps Guzzle with retry middleware (5 attempts on 429/5xx/timeout).
+ * Provides typed methods for the legacy Point Integration API and the
+ * shared Payments API. All methods throw MercadoPagoException on failure.
+ */
 class MercadoPagoClient
 {
     private readonly Client $client;

@@ -11,6 +11,16 @@ use App\Infrastructure\Repositories\PaymentRepository;
 use App\Infrastructure\Repositories\TerminalRepository;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Handles point_integration_wh webhooks from Point terminals.
+ *
+ * This is the primary webhook type. When a terminal creates, completes, or
+ * cancels a payment intent, MP sends this notification. The handler:
+ *  1. Finds or creates the intent record (centavos → ARS conversion)
+ *  2. If payment.id is present, fetches full payment details from the MP API
+ *  3. Inserts payment + charges into the DB
+ *  4. Links the intent to the payment
+ */
 class IntentWebhookHandler
 {
     public function __construct(

@@ -6,6 +6,13 @@ namespace App\Infrastructure;
 
 use Medoo\Medoo;
 
+/**
+ * Lazy Medoo connection factory.
+ *
+ * Reads DB config from env vars and creates the connection on first use.
+ * Registered as a singleton in the PHP-DI container so all repositories
+ * share the same underlying PDO connection.
+ */
 class Database
 {
     private ?Medoo $connection = null;

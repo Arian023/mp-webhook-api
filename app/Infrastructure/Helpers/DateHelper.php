@@ -6,6 +6,13 @@ namespace App\Infrastructure\Helpers;
 
 use Carbon\Carbon;
 
+/**
+ * Date/time utilities for Mercado Pago API responses.
+ *
+ * MP returns dates in -04:00 timezone. This helper converts them to
+ * Argentina/Buenos_Aires for storage and calculates human-readable
+ * delays (e.g. "2.3 seg", "1.5 min") for logging.
+ */
 class DateHelper
 {
     private const string MP_TIMEZONE = '-04:00';

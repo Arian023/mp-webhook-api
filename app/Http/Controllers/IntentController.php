@@ -8,6 +8,12 @@ use App\Application\Services\IntentService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+/**
+ * /api/intents — payment intent CRUD.
+ *
+ * Thin controller that delegates to IntentService. Protected by bearer auth.
+ * Endpoints: POST create, GET status, DELETE cancel, POST refund.
+ */
 class IntentController
 {
     public function __construct(

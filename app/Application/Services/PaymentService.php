@@ -9,6 +9,12 @@ use App\Infrastructure\MercadoPago\MercadoPagoClient;
 use App\Infrastructure\Repositories\PaymentRepository;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Payment operations (get, refund) via the MP Payments API.
+ *
+ * Used by the /api/payments endpoints. Fetches payment details from
+ * MP and keeps the local DB in sync on each call.
+ */
 class PaymentService
 {
     public function __construct(

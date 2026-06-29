@@ -1,0 +1,23 @@
+{
+  "devices": [
+    {
+      "id": "NEWLAND_N950__N950NCD300558221",
+      "pos_id": 46710376,
+      "store_id": "17153552",
+      "external_pos_id": "Suc01Pos01",
+      "operating_mode": "PDV"
+    },
+    {
+      "id": "NEWLAND_N950__N950NCCC09825976",
+      "pos_id": 46710744,
+      "store_id": "17151852",
+      "external_pos_id": "Suc01Pos01",
+      "operating_mode": "STANDALONE"
+    }
+  ],
+  "paging": {
+    "total": 2,
+    "limit": 50,
+    "offset": 0
+  }
+}

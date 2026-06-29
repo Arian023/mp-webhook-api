@@ -194,7 +194,7 @@ composer analyse
 composer test
 ```
 
-### Ejemplos de API Censurados
+### Ejemplos de API
 
 Ver `docs/examples/` para respuestas JSON anonimizadas de la API de Mercado Pago. Útiles como referencia para las estructuras de webhook y pago.
 
@@ -214,7 +214,7 @@ mp-webhook-api/
 │       └── Repositories/            # Terminal, Intent, Payment, WebhookLog
 ├── bootstrap/                       # Container, middleware, rutas
 ├── database/migrations/             # Migraciones Phinx
-├── docs/examples/                   # Ejemplos censurados de respuestas API
+├── docs/examples/                   # Ejemplos de respuestas API
 ├── public/index.php                 # Front controller
 ├── phinx.php                        # Config Phinx
 ├── pint.json                        # Config Laravel Pint
@@ -224,4 +224,4 @@ mp-webhook-api/
 
 ## Licencia
 
-Privado — no es código abierto.
+Este proyecto está bajo la [licencia MIT](https://opensource.org/license/MIT).

@@ -8,6 +8,14 @@ use App\Infrastructure\Repositories\WebhookLogRepository;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Core webhook orchestrator.
+ *
+ * Receives raw HTTP requests from Mercado Pago, validates the HMAC-SHA256
+ * signature, checks the JSON structure, dispatches to the appropriate handler
+ * (IntentWebhookHandler or PaymentWebhookHandler), and logs every event to
+ * the webhook_logs table. Always returns 200 — MP retries on non-2xx.
+ */
 class WebhookProcessor
 {
     public function __construct(

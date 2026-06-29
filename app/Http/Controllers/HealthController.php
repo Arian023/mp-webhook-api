@@ -9,6 +9,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * GET /health — liveness check.
+ *
+ * Tests the DB connection and returns status JSON. Used by load balancers
+ * and monitoring to verify the app is running.
+ */
 class HealthController
 {
     public function __construct(

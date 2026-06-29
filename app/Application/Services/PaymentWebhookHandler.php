@@ -11,6 +11,14 @@ use App\Infrastructure\Repositories\PaymentRepository;
 use App\Infrastructure\Repositories\TerminalRepository;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Handles payment-type webhooks (legacy, rarely used).
+ *
+ * This is the older webhook type where MP sends a direct payment
+ * notification instead of an intent notification. The handler fetches
+ * the full payment from the MP API, stores it, and updates any related
+ * intent via metadata.payment_intent_id.
+ */
 class PaymentWebhookHandler
 {
     public function __construct(

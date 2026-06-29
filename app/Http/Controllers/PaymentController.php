@@ -8,6 +8,12 @@ use App\Application\Services\PaymentService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+/**
+ * /api/payments — payment details and refunds.
+ *
+ * Thin controller that delegates to PaymentService. Protected by bearer auth.
+ * Endpoints: GET details, POST refund.
+ */
 class PaymentController
 {
     public function __construct(

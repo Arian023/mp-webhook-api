@@ -155,7 +155,7 @@ Received when a Point terminal creates, completes, or cancels a payment intent.
 }
 ```
 
-**Key**: `amount` is in **centavos** (divide by 100 for ARS).
+**Key**: `amount` is in **cents** (divide by 100 for ARS).
 
 Processing steps:
 1. Validate HMAC-SHA256 signature
@@ -194,7 +194,7 @@ composer analyse
 composer test
 ```
 
-### Censored API Examples
+### API Examples
 
 See `docs/examples/` for anonymized JSON responses from the Mercado Pago API. Useful as reference for webhook and payment structures.
 
@@ -214,7 +214,7 @@ mp-webhook-api/
 │       └── Repositories/            # Terminal, Intent, Payment, WebhookLog
 ├── bootstrap/                       # Container, middleware, routes
 ├── database/migrations/             # Phinx migrations
-├── docs/examples/                   # Censored API response examples
+├── docs/examples/                   # API response examples
 ├── public/index.php                 # Front controller
 ├── phinx.php                        # Phinx config
 ├── pint.json                        # Laravel Pint config
@@ -224,4 +224,4 @@ mp-webhook-api/
 
 ## License
 
-Private — not open source.
+This project is released under the [MIT License](https://opensource.org/license/MIT).
