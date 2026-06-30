@@ -1,0 +1,60 @@
+sequenceDiagram
+    autonumber
+    participant T as Terminal Point
+    participant MP as Mercado Pago
+    participant WH as POST /webhook
+    participant WL as RequestLogger
+    participant WP as WebhookProcessor
+    participant IA as isAuthorized()
+    participant IV as isValid()
+    participant IW as IntentWebhookHandler
+    participant MPAPI as MP API (Guzzle)
+    participant DB as MySQL (Medoo)
+
+    T->>MP: Pago completado
+    MP->>WH: POST /webhook?data.id={uuid}&type=point_integration_wh
+    Note right of WH: Headers: X-Request-Id, X-Signature
+
+    WH->>WL: Registrar request (method, IP, path)
+    WL->>WP: process(request)
+
+    WP->>WP: Extraer query params (data.id, type)
+    WP->>WP: Parsear body JSON
+
+    WP->>IA: isAuthorized(request, dataId)
+    Note right of IA: Parsear X-Signature: ts=...,v1=...<br/>HMAC-SHA256(secret, manifest)
+    IA-->>WP: true / false
+
+    WP->>IV: isValid(body, type)
+    Note right of IV: Verificar campos requeridos:<br/>id, amount, state
+    IV-->>WP: true / false
+
+    alt Firma válida Y body válido
+        WP->>IW: handle(body, dataId)
+
+        IW->>DB: SELECT intents WHERE intent_id = dataId
+        alt Intent no encontrado
+            IW->>DB: INSERT INTO intents (intent_id, amount, status, ...)
+        end
+
+        alt body.payment.id existe
+            IW->>MPAPI: GET /v1/payments/{paymentId}
+            MPAPI-->>IW: Detalles del pago (200+ campos)
+
+            IW->>DB: SELECT payments WHERE payment_id = ?
+            alt Pago no encontrado
+                IW->>DB: INSERT INTO payments (payment_id, status, card, ...)
+                IW->>DB: INSERT INTO charges (charge_id, type, amount, ...)
+            else Pago existente
+                IW->>DB: UPDATE payments SET status = ?, ...
+            end
+
+            IW->>DB: UPDATE intents SET payment_id = ?, payment_method = ?, ...
+        else Sin payment.id
+            IW->>DB: UPDATE intents SET intent_status = state
+        end
+    end
+
+    WP->>DB: INSERT INTO webhook_logs (event_type, payload, signature_valid, ...)
+    WP-->>WH: { message: "Webhook processed", type: "..." }
+    WH-->>MP: 200 OK

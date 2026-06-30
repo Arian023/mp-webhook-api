@@ -4,31 +4,51 @@ Mercado Pago Point webhook processor built with Slim 4. Receives, validates, log
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Mercado Pago Point Terminal                 │
-└──────────────────────────────────┬──────────────────────────────┘
-                                   │ POST /webhook
-                                   ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  RequestLoggerMiddleware → WebhookController → WebhookProcessor │
-│                                                                 │
-│  1. isAuthorized()   — HMAC-SHA256 signature validation         │
-│  2. isValid()        — JSON structure per type                  │
-│  3. Dispatch         — IntentWebhookHandler / PaymentHandler    │
-│  4. webhook_logs     — Store full event record                  │
-│  5. 200 response     — MP retries on non-2xx                    │
-└──────────────────────────────────┬──────────────────────────────┘
-                                   │
-                    ┌──────────────┴──────────────┐
-                    ▼                              ▼
-         IntentWebhookHandler            PaymentWebhookHandler
-         (point_integration_wh)          (payment — legacy)
-                    │                              │
-                    ├─ Create/update intent         ├─ Fetch payment from MP API
-                    ├─ Fetch payment from MP API    ├─ Insert/update payment
-                    ├─ Insert payment + charges     ├─ Insert charges
-                    └─ Link intent ↔ payment        └─ Update related intent
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '14px' }}}%%
+graph TB
+    subgraph "Mercado Pago"
+        MP[Point Terminal]
+        MPAPI[MP API<br/>api.mercadopago.com]
+    end
+
+    subgraph "mp-webhook-api (Slim 4)"
+        direction TB
+        WH[POST /webhook<br/>WebhookController]
+        WP[WebhookProcessor]
+        IA{isAuthorized?<br/>HMAC-SHA256}
+        IV{isValid?<br/>JSON schema}
+        IW[IntentWebhookHandler]
+        PAYH[PaymentWebhookHandler]
+        ORDH[OrderWebhookHandler]
+        LOG[webhook_logs]
+    end
+
+    subgraph "Infrastructure"
+        DB[(MySQL<br/>Medoo)]
+        MPClient[Guzzle Client<br/>+ Retry Middleware]
+    end
+
+    MP -->|"POST /webhook<br/>X-Signature"| WH
+    WH --> WP
+    WP --> IA
+    IA -->|invalid| WP
+    IA -->|valid| IV
+    IV -->|invalid| WP
+    IV -->|valid| IW
+    IV -->|valid| PAYH
+    IV -->|valid| ORDH
+
+    IW --> MPClient
+    PAYH --> MPClient
+    ORDH --> MPClient
+    MPClient --> MPAPI
+
+    IW --> DB
+    PAYH --> DB
+    ORDH --> DB
+    WP -->|log event| LOG
+    LOG --> DB
 ```
 
 ### Layers
@@ -128,6 +148,15 @@ Headers: `X-Request-Id`, `X-Signature: ts=...,v1=...`
 | `GET` | `/api/payments/{id}` | Get payment details |
 | `POST` | `/api/payments/{id}/refund` | Refund payment |
 
+### Orders API (Bearer auth)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/orders` | Create order ( Orders API) |
+| `GET` | `/api/orders/{id}` | Get order details |
+| `POST` | `/api/orders/{id}/cancel` | Cancel order |
+| `POST` | `/api/orders/{id}/refund` | Refund order |
+
 ### Health (no auth)
 
 ```
@@ -141,6 +170,69 @@ Returns `{"status":"ok","database":"connected"}`.
 ### `point_integration_wh` (intent notification)
 
 Received when a Point terminal creates, completes, or cancels a payment intent.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Point Terminal
+    participant MP as Mercado Pago
+    participant WH as POST /webhook
+    participant WL as RequestLogger
+    participant WP as WebhookProcessor
+    participant IA as isAuthorized()
+    participant IV as isValid()
+    participant IW as IntentWebhookHandler
+    participant MPAPI as MP API (Guzzle)
+    participant DB as MySQL (Medoo)
+
+    T->>MP: Payment completed
+    MP->>WH: POST /webhook?data.id={uuid}&type=point_integration_wh
+    Note right of WH: Headers: X-Request-Id, X-Signature
+
+    WH->>WL: Log request (method, IP, path)
+    WL->>WP: process(request)
+
+    WP->>WP: Extract query params (data.id, type)
+    WP->>WP: Parse JSON body
+
+    WP->>IA: isAuthorized(request, dataId)
+    Note right of IA: Parse X-Signature: ts=...,v1=...<br/>HMAC-SHA256(secret, manifest)
+    IA-->>WP: true / false
+
+    WP->>IV: isValid(body, type)
+    Note right of IV: Check required fields:<br/>id, amount, state
+    IV-->>WP: true / false
+
+    alt Signature valid AND body valid
+        WP->>IW: handle(body, dataId)
+
+        IW->>DB: SELECT intents WHERE intent_id = dataId
+        alt Intent not found
+            IW->>DB: INSERT INTO intents (intent_id, amount, status, ...)
+        end
+
+        alt body.payment.id exists
+            IW->>MPAPI: GET /v1/payments/{paymentId}
+            MPAPI-->>IW: Payment details (200+ fields)
+
+            IW->>DB: SELECT payments WHERE payment_id = ?
+            alt Payment not found
+                IW->>DB: INSERT INTO payments (payment_id, status, card, ...)
+                IW->>DB: INSERT INTO charges (charge_id, type, amount, ...)
+            else Payment exists
+                IW->>DB: UPDATE payments SET status = ?, ...
+            end
+
+            IW->>DB: UPDATE intents SET payment_id = ?, payment_method = ?, ...
+        else No payment.id
+            IW->>DB: UPDATE intents SET intent_status = state
+        end
+    end
+
+    WP->>DB: INSERT INTO webhook_logs (event_type, payload, signature_valid, ...)
+    WP-->>WH: { message: "Webhook processed", type: "..." }
+    WH-->>MP: 200 OK
+```
 
 ```json
 // Query: ?data.id=61ec4adf-...&type=point_integration_wh
@@ -169,9 +261,66 @@ Processing steps:
 
 Direct payment notification. Fetches payment details and stores them.
 
+### `order` (Orders API)
+
+Order status notification. Receives order events like `order.created`, `order.updated`, `order.canceled`. Fetches full order from MP API, stores/updates in local DB, and syncs associated payments.
+
 ## Database Schema
 
-Five tables managed by Phinx migrations:
+Six tables managed by Phinx migrations:
+
+```mermaid
+erDiagram
+    terminals {
+        INT id PK
+        VARCHAR external_id UK "Device ID from MP"
+        VARCHAR pos_id "POS ID in MP"
+        VARCHAR serial_number "Device serial"
+    }
+
+    intents {
+        INT id PK
+        VARCHAR intent_id UK "MP intent UUID"
+        VARCHAR device_id "Terminal device_id"
+        DECIMAL amount "Amount in ARS"
+        VARCHAR intent_status "OPEN / FINISHED / CANCELED"
+        BIGINT payment_id "MP payment ID"
+    }
+
+    payments {
+        INT id PK
+        BIGINT payment_id UK "MP payment ID"
+        VARCHAR intent_id "MP intent UUID"
+        INT terminal_id FK "FK to terminals"
+        VARCHAR status "approved / rejected / refunded"
+        DECIMAL total_amount "Amount in ARS"
+        VARCHAR payment_method "visa, debvisa"
+        VARCHAR card_last_four "Last 4 digits"
+        DATETIME created_at_mp "date_created (tz converted)"
+    }
+
+    charges {
+        INT id PK
+        INT payment_id FK "FK to payments"
+        VARCHAR charge_id UK "MP charge ID"
+        VARCHAR type "fee / tax"
+        DECIMAL amount "Original amount"
+        DECIMAL rate "Rate percentage"
+    }
+
+    webhook_logs {
+        BIGINT id PK
+        VARCHAR request_id "X-Request-Id"
+        VARCHAR event_type "order / payment / point_integration_wh"
+        JSON payload "Full webhook body"
+        TINYINT signature_valid "0 or 1"
+    }
+
+    terminals ||--o{ intents : "device_id"
+    terminals ||--o{ payments : "terminal_id"
+    intents ||--o| payments : "payment_id"
+    payments ||--o{ charges : "payment_id"
+```
 
 | Table | Description |
 |---|---|
@@ -179,6 +328,7 @@ Five tables managed by Phinx migrations:
 | `intents` | Payment intents (intent_id UUID, amount, status, linked payment) |
 | `payments` | Payment records (payment_id, card details, amounts, timestamps) |
 | `charges` | Fee and tax breakdown per payment |
+| `orders` | Orders API records (order_id, status, device_id, payment details) |
 | `webhook_logs` | Full webhook event log (payload, signature, response code) |
 
 ## Development

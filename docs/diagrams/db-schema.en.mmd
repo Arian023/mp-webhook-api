@@ -1,0 +1,108 @@
+erDiagram
+    terminals {
+        INT id PK
+        VARCHAR external_id UK "Device ID from MP (model + serial)"
+        VARCHAR pos_id "POS ID in MP"
+        SMALLINT branch_code "Branch number"
+        SMALLINT register_number "Cash register number"
+        VARCHAR operating_mode "Operating mode"
+        VARCHAR description "Model / description"
+        VARCHAR serial_number "Device serial number"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    intents {
+        INT id PK
+        VARCHAR intent_id UK "MP intent UUID"
+        VARCHAR device_id "Terminal device_id"
+        VARCHAR external_ref "External reference"
+        DECIMAL amount "Total amount in ARS"
+        VARCHAR intent_status "OPEN / FINISHED / CANCELED / ERROR"
+        CHAR reject_reason "C=installments M=amount F=method X=other"
+        VARCHAR payment_method "visa, debvisa, account_money"
+        TINYINT installments "Number of installments"
+        VARCHAR payment_status "Payment status from MP"
+        VARCHAR payment_detail "Payment status detail"
+        BIGINT payment_id "MP payment ID (11 digits)"
+        VARCHAR ticket_number "Invoice number"
+        SMALLINT register_number "Cash register number"
+        DATETIME created_at "Intent creation timestamp"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    payments {
+        INT id PK
+        BIGINT payment_id UK "MP payment ID (11 digits)"
+        VARCHAR intent_id "MP intent UUID"
+        INT terminal_id FK "FK to terminals.id"
+        VARCHAR external_ref "External reference"
+        VARCHAR status "approved / rejected / refunded"
+        VARCHAR status_detail "accredited, cc_rejected_..."
+        VARCHAR payment_type "credit_card, debit_card"
+        VARCHAR payment_method "visa, debvisa"
+        DECIMAL total_amount "Total amount in ARS"
+        DECIMAL net_received "Net received amount"
+        DECIMAL overpaid_amount "Overpaid amount"
+        DECIMAL taxes_amount "Taxes amount"
+        DECIMAL coupon_amount "Coupon discount"
+        DECIMAL installment_amount "Per-installment amount"
+        TINYINT installments "Number of installments"
+        VARCHAR currency "ARS"
+        VARCHAR authorization_code "6-char auth code"
+        VARCHAR card_bin "First 6-8 digits"
+        VARCHAR card_first_six "First 6 digits"
+        VARCHAR card_last_four "Last 4 digits"
+        VARCHAR card_country "ARG"
+        VARCHAR holder_doc_type "Cardholder ID type"
+        VARCHAR holder_doc_number "Cardholder ID number"
+        VARCHAR holder_name "Cardholder name"
+        DATETIME created_at_mp "date_created (tz converted)"
+        DATETIME approved_at "date_approved (tz converted)"
+        VARCHAR release_status "pending / released"
+        DATETIME released_at "Money release date"
+        CHAR is_live "S=production N=sandbox"
+        VARCHAR device_serial "Device serial number"
+        VARCHAR interaction_type "POINT or INSTORE"
+        BIGINT issuer_id "Card issuer ID"
+        BIGINT payer_id "Payer ID"
+        BIGINT store_id "Store ID"
+        BIGINT pos_id "POS ID"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    charges {
+        INT id PK
+        INT payment_id FK "FK to payments.id"
+        VARCHAR charge_id UK "MP charge ID"
+        BIGINT payment_ref "MP payment ID"
+        VARCHAR type "fee / tax"
+        VARCHAR description "Charge name"
+        DECIMAL amount "Original amount"
+        DECIMAL refunded "Refunded amount"
+        DECIMAL rate "Rate percentage"
+        VARCHAR from_account "Debited from"
+        VARCHAR to_account "Credited to"
+        DATETIME created_at_mp "date_created (tz converted)"
+        TIMESTAMP updated_at
+    }
+
+    webhook_logs {
+        BIGINT id PK
+        VARCHAR request_id "X-Request-Id from MP"
+        VARCHAR event_type "order / payment / point_integration_wh"
+        VARCHAR action "order.processed / order.canceled"
+        VARCHAR data_id "data.id from query params"
+        JSON payload "Full webhook body"
+        TINYINT signature_valid "0 or 1"
+        SMALLINT response_code "HTTP response code"
+        DATETIME processed_at "Processing timestamp"
+        TIMESTAMP created_at
+    }
+
+    terminals ||--o{ intents : "device_id"
+    terminals ||--o{ payments : "terminal_id"
+    intents ||--o| payments : "payment_id"
+    payments ||--o{ charges : "payment_id"

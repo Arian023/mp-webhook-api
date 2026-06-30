@@ -1,0 +1,43 @@
+graph TB
+    subgraph "Mercado Pago"
+        MP[Terminal Point]
+        MPAPI[MP API<br/>api.mercadopago.com]
+    end
+
+    subgraph "mp-webhook-api (Slim 4)"
+        direction TB
+        WH[POST /webhook<br/>WebhookController]
+        WP[WebhookProcessor]
+        IA{isAuthorized?<br/>HMAC-SHA256}
+        IV{isValid?<br/>JSON schema}
+        IW[IntentWebhookHandler]
+        PAYH[PaymentWebhookHandler]
+        ORDH[OrderWebhookHandler]
+        LOG[webhook_logs]
+    end
+
+    subgraph "Infraestructura"
+        DB[(MySQL<br/>Medoo)]
+        MPClient[Guzzle Client<br/>+ Middleware de Reintentos]
+    end
+
+    MP -->|"POST /webhook<br/>X-Signature"| WH
+    WH --> WP
+    WP --> IA
+    IA -->|inválida| WP
+    IA -->|válida| IV
+    IV -->|inválida| WP
+    IV -->|válida| IW
+    IV -->|válida| PAYH
+    IV -->|válida| ORDH
+
+    IW --> MPClient
+    PAYH --> MPClient
+    ORDH --> MPClient
+    MPClient --> MPAPI
+
+    IW --> DB
+    PAYH --> DB
+    ORDH --> DB
+    WP -->|registrar evento| LOG
+    LOG --> DB

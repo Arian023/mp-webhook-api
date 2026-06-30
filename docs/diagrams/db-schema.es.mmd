@@ -1,0 +1,108 @@
+erDiagram
+    terminals {
+        INT id PK
+        VARCHAR external_id UK "Device ID de MP (modelo + serial)"
+        VARCHAR pos_id "POS ID en MP"
+        SMALLINT branch_code "Número de sucursal"
+        SMALLINT register_number "Número de caja"
+        VARCHAR operating_mode "Modo de operación"
+        VARCHAR description "Modelo / descripción"
+        VARCHAR serial_number "Número de serie del dispositivo"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    intents {
+        INT id PK
+        VARCHAR intent_id UK "UUID del intent en MP"
+        VARCHAR device_id "device_id de la terminal"
+        VARCHAR external_ref "Referencia externa"
+        DECIMAL amount "Monto total en ARS"
+        VARCHAR intent_status "OPEN / FINISHED / CANCELED / ERROR"
+        CHAR reject_reason "C=cuotas M=monto F=método X=otro"
+        VARCHAR payment_method "visa, debvisa, account_money"
+        TINYINT installments "Cantidad de cuotas"
+        VARCHAR payment_status "Estado del pago en MP"
+        VARCHAR payment_detail "Detalle del estado del pago"
+        BIGINT payment_id "ID de pago MP (11 dígitos)"
+        VARCHAR ticket_number "Número de factura"
+        SMALLINT register_number "Número de caja"
+        DATETIME created_at "Timestamp de creación del intent"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    payments {
+        INT id PK
+        BIGINT payment_id UK "ID de pago MP (11 dígitos)"
+        VARCHAR intent_id "UUID del intent en MP"
+        INT terminal_id FK "FK a terminals.id"
+        VARCHAR external_ref "Referencia externa"
+        VARCHAR status "approved / rejected / refunded"
+        VARCHAR status_detail "accredited, cc_rejected_..."
+        VARCHAR payment_type "credit_card, debit_card"
+        VARCHAR payment_method "visa, debvisa"
+        DECIMAL total_amount "Monto total en ARS"
+        DECIMAL net_received "Monto neto recibido"
+        DECIMAL overpaid_amount "Monto sobrepagado"
+        DECIMAL taxes_amount "Monto de impuestos"
+        DECIMAL coupon_amount "Descuento por cupón"
+        DECIMAL installment_amount "Monto por cuota"
+        TINYINT installments "Cantidad de cuotas"
+        VARCHAR currency "ARS"
+        VARCHAR authorization_code "Código de autorización (6 chars)"
+        VARCHAR card_bin "Primeros 6-8 dígitos"
+        VARCHAR card_first_six "Primeros 6 dígitos"
+        VARCHAR card_last_four "Últimos 4 dígitos"
+        VARCHAR card_country "ARG"
+        VARCHAR holder_doc_type "Tipo de doc del titular"
+        VARCHAR holder_doc_number "Número de doc del titular"
+        VARCHAR holder_name "Nombre del titular"
+        DATETIME created_at_mp "date_created (conv. tz)"
+        DATETIME approved_at "date_approved (conv. tz)"
+        VARCHAR release_status "pending / released"
+        DATETIME released_at "Fecha de liberación de fondos"
+        CHAR is_live "S=producción N=sandbox"
+        VARCHAR device_serial "Número de serie del dispositivo"
+        VARCHAR interaction_type "POINT o INSTORE"
+        BIGINT issuer_id "ID del emisor"
+        BIGINT payer_id "ID del pagador"
+        BIGINT store_id "ID de la sucursal"
+        BIGINT pos_id "ID del POS"
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    charges {
+        INT id PK
+        INT payment_id FK "FK a payments.id"
+        VARCHAR charge_id UK "ID del cargo en MP"
+        BIGINT payment_ref "ID de pago MP"
+        VARCHAR type "fee / tax"
+        VARCHAR description "Nombre del cargo"
+        DECIMAL amount "Monto original"
+        DECIMAL refunded "Monto reembolsado"
+        DECIMAL rate "Porcentaje de comisión"
+        VARCHAR from_account "Débito de"
+        VARCHAR to_account "Crédito a"
+        DATETIME created_at_mp "date_created (conv. tz)"
+        TIMESTAMP updated_at
+    }
+
+    webhook_logs {
+        BIGINT id PK
+        VARCHAR request_id "X-Request-Id de MP"
+        VARCHAR event_type "order / payment / point_integration_wh"
+        VARCHAR action "order.processed / order.canceled"
+        VARCHAR data_id "data.id de query params"
+        JSON payload "Body completo del webhook"
+        TINYINT signature_valid "0 o 1"
+        SMALLINT response_code "Código HTTP de respuesta"
+        DATETIME processed_at "Timestamp de procesamiento"
+        TIMESTAMP created_at
+    }
+
+    terminals ||--o{ intents : "device_id"
+    terminals ||--o{ payments : "terminal_id"
+    intents ||--o| payments : "payment_id"
+    payments ||--o{ charges : "payment_id"
