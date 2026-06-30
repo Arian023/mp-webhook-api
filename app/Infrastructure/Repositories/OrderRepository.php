@@ -32,7 +32,7 @@ class OrderRepository
 
     public function update(string $orderId, array $data): bool
     {
-        $data['updated_by'] = 'api';
+        $data['updated_by'] ??= 'api';
         $changed = $this->database->getConnection()->update('orders', $data, ['order_id' => $orderId])->rowCount() > 0;
 
         if ($changed) {

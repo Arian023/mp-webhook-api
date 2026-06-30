@@ -109,7 +109,7 @@ class WebhookProcessor
 
         $parts = [];
         foreach (explode(',', $signatureHeader) as $part) {
-            [$key, $value] = explode('=', mb_trim($part), 2);
+            [$key, $value] = explode('=', trim($part), 2);
             $parts[$key] = $value;
         }
 
