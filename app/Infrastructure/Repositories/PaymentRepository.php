@@ -23,8 +23,8 @@ class PaymentRepository
 
     public function findByPaymentId(int $paymentId): ?array
     {
-        /** @var array|null $result */
-        $result = $this->database->getConnection()->select('payments', null, '*', ['payment_id' => $paymentId]);
+        /** @var array $result */
+        $result = $this->database->getConnection()->select('payments', '*', ['payment_id' => $paymentId]);
         return $result[0] ?? null;
     }
 

@@ -15,12 +15,15 @@ use Psr\Log\LoggerInterface;
  * HTTP client for the Mercado Pago API.
  *
  * Wraps Guzzle with retry middleware (5 attempts on 429/5xx/timeout).
- * Provides typed methods for the legacy Point Integration API and the
- * shared Payments API. All methods throw MercadoPagoException on failure.
+ * Provides typed methods for the legacy Point Integration API, the
+ * shared Payments API, and the new Orders API. All methods throw
+ * MercadoPagoException on failure.
  */
 class MercadoPagoClient
 {
     private readonly Client $client;
+
+    private int $requestCounter = 0;
 
     public function __construct(
         private readonly string $accessToken,
@@ -81,6 +84,45 @@ class MercadoPagoClient
     {
         $this->logger->debug('MP API: refundPayment', ['payment_id' => $paymentId]);
         return $this->request('POST', "/v1/payments/{$paymentId}/refunds");
+    }
+
+    public function createOrder(array $body): array
+    {
+        $this->requestCounter++;
+        $idempotencyKey = sprintf('mp-webhook-%d-%d', time(), $this->requestCounter);
+        $this->logger->debug('MP API: createOrder');
+        return $this->request('POST', '/v1/orders', [
+            'json' => $body,
+            'headers' => ['X-Idempotency-Key' => $idempotencyKey],
+        ]);
+    }
+
+    public function getOrder(string $orderId): array
+    {
+        $this->logger->debug('MP API: getOrder', ['order_id' => $orderId]);
+        return $this->request('GET', "/v1/orders/{$orderId}");
+    }
+
+    public function cancelOrder(string $orderId): array
+    {
+        $this->requestCounter++;
+        $idempotencyKey = sprintf('mp-webhook-cancel-%d-%d', time(), $this->requestCounter);
+        $this->logger->debug('MP API: cancelOrder', ['order_id' => $orderId]);
+        return $this->request('POST', "/v1/orders/{$orderId}/cancel", [
+            'headers' => ['X-Idempotency-Key' => $idempotencyKey],
+        ]);
+    }
+
+    public function refundOrder(string $orderId, ?array $body = null): array
+    {
+        $this->requestCounter++;
+        $idempotencyKey = sprintf('mp-webhook-refund-%d-%d', time(), $this->requestCounter);
+        $this->logger->debug('MP API: refundOrder', ['order_id' => $orderId]);
+        $options = ['headers' => ['X-Idempotency-Key' => $idempotencyKey]];
+        if ($body !== null) {
+            $options['json'] = $body;
+        }
+        return $this->request('POST', "/v1/orders/{$orderId}/refund", $options);
     }
 
     private function request(string $method, string $uri, array $options = []): array

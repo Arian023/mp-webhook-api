@@ -24,8 +24,8 @@ class IntentRepository
 
     public function findByIntentId(string $intentId): ?array
     {
-        /** @var array|null $result */
-        $result = $this->database->getConnection()->select('intents', null, '*', ['intent_id' => $intentId]);
+        /** @var array $result */
+        $result = $this->database->getConnection()->select('intents', '*', ['intent_id' => $intentId]);
         return $result[0] ?? null;
     }
 

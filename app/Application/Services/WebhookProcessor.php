@@ -13,8 +13,9 @@ use Psr\Log\LoggerInterface;
  *
  * Receives raw HTTP requests from Mercado Pago, validates the HMAC-SHA256
  * signature, checks the JSON structure, dispatches to the appropriate handler
- * (IntentWebhookHandler or PaymentWebhookHandler), and logs every event to
- * the webhook_logs table. Always returns 200 — MP retries on non-2xx.
+ * (IntentWebhookHandler, PaymentWebhookHandler, or OrderWebhookHandler),
+ * and logs every event to the webhook_logs table. Always returns 200 — MP
+ * retries on non-2xx.
  */
 class WebhookProcessor
 {
@@ -23,15 +24,18 @@ class WebhookProcessor
         private readonly WebhookLogRepository $webhookLogRepository,
         private readonly IntentWebhookHandler $intentHandler,
         private readonly PaymentWebhookHandler $paymentHandler,
+        private readonly OrderWebhookHandler $orderHandler,
     ) {
     }
 
     public function process(ServerRequestInterface $request): array
     {
         $startTime = microtime(true);
-        $queryParams = $request->getQueryParams();
-        $dataId = $queryParams['data.id'] ?? '';
-        $type = $queryParams['type'] ?? '';
+
+        // PHP parses data.id as data[id] due to bracket expansion — use raw query string
+        $rawQuery = $request->getUri()->getQuery();
+        $dataId = $this->extractQueryParam($rawQuery, 'data.id');
+        $type = $this->extractQueryParam($rawQuery, 'type');
 
         $body = json_decode((string) $request->getBody(), true) ?? [];
         $this->logger->info('Webhook received', ['type' => $type, 'data_id' => $dataId]);
@@ -51,6 +55,7 @@ class WebhookProcessor
                 match ($type) {
                     'point_integration_wh' => $this->intentHandler->handle($body, $dataId),
                     'payment' => $this->paymentHandler->handle($body, $dataId),
+                    'order' => $this->orderHandler->handle($body, $dataId),
                     default => $this->logger->warning('Unknown webhook type', ['type' => $type]),
                 };
             } catch (\Throwable $e) {
@@ -126,6 +131,7 @@ class WebhookProcessor
         return match ($type) {
             'point_integration_wh' => $this->validateIntentBody($body),
             'payment' => $this->validatePaymentBody($body),
+            'order' => $this->validateOrderBody($body),
             default => false,
         };
     }
@@ -138,10 +144,6 @@ class WebhookProcessor
         }
         if (!isset($body['amount']) || !is_numeric($body['amount'])) {
             $this->logger->warning('Invalid intent body: missing or invalid amount');
-            return false;
-        }
-        if (empty($body['created_at'])) {
-            $this->logger->warning('Invalid intent body: missing created_at');
             return false;
         }
         if (empty($body['state'])) {
@@ -168,5 +170,31 @@ class WebhookProcessor
         }
 
         return true;
+    }
+
+    private function validateOrderBody(array $body): bool
+    {
+        if (empty($body['action'])) {
+            $this->logger->warning('Invalid order body: missing action');
+            return false;
+        }
+        if (empty($body['data']['id'])) {
+            $this->logger->warning('Invalid order body: missing data.id');
+            return false;
+        }
+
+        return true;
+    }
+
+    private function extractQueryParam(string $rawQuery, string $key): string
+    {
+        // Manual parsing — parse_str converts dots to underscores
+        foreach (explode('&', $rawQuery) as $pair) {
+            $parts = explode('=', $pair, 2);
+            if (count($parts) === 2 && urldecode($parts[0]) === $key) {
+                return urldecode($parts[1]);
+            }
+        }
+        return '';
     }
 }

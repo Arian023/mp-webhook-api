@@ -22,22 +22,22 @@ class TerminalRepository
 
     public function findByExternalId(string $externalId): ?array
     {
-        /** @var array|null $result */
-        $result = $this->database->getConnection()->select('terminals', null, '*', ['external_id' => $externalId]);
+        /** @var array $result */
+        $result = $this->database->getConnection()->select('terminals', '*', ['external_id' => $externalId]);
         return $result[0] ?? null;
     }
 
     public function findByPosId(string $posId): ?array
     {
-        /** @var array|null $result */
-        $result = $this->database->getConnection()->select('terminals', null, '*', ['pos_id' => $posId]);
+        /** @var array $result */
+        $result = $this->database->getConnection()->select('terminals', '*', ['pos_id' => $posId]);
         return $result[0] ?? null;
     }
 
     public function findById(int $id): ?array
     {
-        /** @var array|null $result */
-        $result = $this->database->getConnection()->select('terminals', null, '*', ['id' => $id]);
+        /** @var array $result */
+        $result = $this->database->getConnection()->select('terminals', '*', ['id' => $id]);
         return $result[0] ?? null;
     }
 }
