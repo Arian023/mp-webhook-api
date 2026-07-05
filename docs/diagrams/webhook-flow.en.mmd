@@ -1,6 +1,5 @@
 sequenceDiagram
     autonumber
-    participant T as Point Terminal
     participant MP as Mercado Pago
     participant WH as POST /webhook
     participant WL as RequestLogger
@@ -8,10 +7,8 @@ sequenceDiagram
     participant IA as isAuthorized()
     participant IV as isValid()
     participant IW as IntentWebhookHandler
-    participant MPAPI as MP API (Guzzle)
     participant DB as MySQL (Medoo)
 
-    T->>MP: Payment completed
     MP->>WH: POST /webhook?data.id={uuid}&type=point_integration_wh
     Note right of WH: Headers: X-Request-Id, X-Signature
 
@@ -38,8 +35,8 @@ sequenceDiagram
         end
 
         alt body.payment.id exists
-            IW->>MPAPI: GET /v1/payments/{paymentId}
-            MPAPI-->>IW: Payment details (200+ fields)
+            IW->>MP: GET /v1/payments/{paymentId}
+            MP-->>IW: Payment details (200+ fields)
 
             IW->>DB: SELECT payments WHERE payment_id = ?
             alt Payment not found

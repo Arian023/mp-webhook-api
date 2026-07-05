@@ -1,8 +1,93 @@
 # mp-webhook-api
 
-Procesador de webhooks de Mercado Pago Point construido con Slim 4. Recibe, valida, registra y almacena notificaciones de pago desde terminales presenciales.
+Procesador de webhooks de Mercado Pago construido con Slim 4. Recibe, valida, registra y almacena notificaciones de pago desde terminales presenciales _Point Smart_, y también compatible con pagos desde QR estáticos. Pensado como el puente entre MP y el software POS de una tienda física.
+
+Para comprender este proyecto, se recomienda fuertemente repasar la documentación de Mercado Pago:
+https://www.mercadopago.com.ar/developers/es/docs/mp-point/overview
+
+> **Nota:** Este proyecto es una refactorización asistida por IA a partir de un desarrollo real sobre la API MP legacy, supervisado por mí. Puede revisar el [PLAN.md](./docs/PLAN.md) con las decisiones de implementación.
+
+## Instalación
+
+### Prerrequisitos
+
+- PHP 8.3+ con extensiones `pdo_mysql`, `json`, `mbstring`, `openssl`
+- MariaDB 10.6+ o MySQL 8.0+ (para compatibilidad con columnas `json`, sino ajustar tabla `webhook_logs`)
+- Composer 2.x
+
+### Pasos
+
+```bash
+git clone https://github.com/Arian023/mp-webhook-api.git
+cd mp-webhook-api
+composer install
+cp .env.example .env
+```
+
+Editar `.env` con tus credenciales:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=mp_webhook
+DB_USER=root
+DB_PASS=
+
+MP_ACCESS_TOKEN=APP_USR-...
+MP_WEBHOOK_SECRET=tu-webhook-secret
+```
+
+## Stack Tecnológico
+
+- [**PHP**](https://www.php.net/) 8.3 en adelante
+- [**Slim 4**](https://www.slimframework.com/) — Micro framework PSR-7/15
+- [**PHP-DI**](https://php-di.org/doc/frameworks/slim.html) — Contenedor de inyección de dependencias
+- [**Medoo**](https://medoo.in/) — Abstracción de base de datos ligera, basada en PDO.
+- [**Guzzle 7**](https://docs.guzzlephp.org/en/stable/index.html) — Cliente HTTP con middleware de reintentos
+- [**Monolog 3**](https://seldaek.github.io/monolog/) — Logging a archivos, consola o base de datos
+- [**Phinx**](https://phinx.org/) — Migraciones de base de datos
+- [**Carbon**](https://carbon.nesbot.com/) — Manejo de fechas
+
+## Desarrollo
+
+Este proyecto incluye configuración para [Lerd](https://lerd.sh). Iniciar con:
+
+```bash
+lerd link          # Registrar sitio en mp-webhook-api.test
+lerd start         # Iniciar PHP-FPM, MariaDB, Nginx
+```
+
+MariaDB está disponible en `lerd-mariadb-11-8:3306` desde los contenedores (usuario: `root`, contraseña: `lerd`).
+
+Alternativamente, se puede usar [php.new](https://php.new/) o [Laravel Herd](https://herd.laravel.com/) en Windows / MacOS para correr el proyecto rápidamente.
+
+```bash
+# Estilo de código (Pint)
+composer lint
+
+# Análisis estático (PHPStan nivel 5)
+composer analyse
+
+# Ambos
+composer test
+```
+
+### Base de datos
+
+```bash
+# Crear la base de datos
+mysql -u root -p -e "CREATE DATABASE mp_webhook CHARACTER SET utf8mb4;"
+
+# Ejecutar migraciones
+vendor/bin/phinx migrate
+```
+
+---
+
 
 ## Arquitectura
+
+Este esquema representa el flujo de procesamiento de una notificación webhook recibida, hasta ser almacenada en la base de datos. Un webhook solamente provee los datos mínimos de un intent, pago u orden. Para obtener la información completa, se realizan llamadas a la API de Mercado Pago.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '14px' }}}%%
@@ -53,74 +138,14 @@ graph TB
 
 ### Capas
 
-| Capa | Ruta | Descripción |
-|---|---|---|
-| HTTP | `app/Http/Controllers/` | Manejadores de rutas Slim |
-| Middleware | `app/Http/Middleware/` | Auth, logging, manejo de errores |
-| Aplicación | `app/Application/Services/` | Orquestación de lógica de negocio |
+| Capa | Ruta | Descripción                                 |
+|---|---|---------------------------------------------|
+| HTTP | `app/Http/Controllers/` | Manejo de rutas Slim                        |
+| Middleware | `app/Http/Middleware/` | Auth, logging, manejo de errores            |
+| Aplicación | `app/Application/Services/` | Orquestación de lógica de negocio           |
 | Infraestructura | `app/Infrastructure/` | Base de datos, cliente MP API, repositorios |
 
-## Stack Tecnológico
-
-- **PHP** >=8.3
-- **Slim 4** — Micro framework PSR-7/15
-- **PHP-DI** — Contenedor de inyección de dependencias
-- **Medoo** — Abstracción de base de datos ligera
-- **Guzzle 7** — Cliente HTTP con middleware de reintentos
-- **Monolog 3** — Logging
-- **Phinx** — Migraciones de base de datos
-- **Carbon** — Manejo de fechas
-
-## Instalación
-
-### Prerrequisitos
-
-- PHP 8.3+ con extensiones `pdo_mysql`, `json`, `mbstring`, `openssl`
-- MariaDB 10.6+ o MySQL 8.0+
-- Composer 2.x
-
-### Pasos
-
-```bash
-git clone https://git.teseonet.duckdns.org/arian/mp-webhook-api.git
-cd mp-webhook-api
-composer install
-cp .env.example .env
-```
-
-Editar `.env` con tus credenciales:
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=mp_webhook
-DB_USER=root
-DB_PASS=
-
-MP_ACCESS_TOKEN=APP_USR-...
-MP_WEBHOOK_SECRET=tu-webhook-secret
-```
-
-### Base de datos
-
-```bash
-# Crear la base de datos
-mysql -u root -p -e "CREATE DATABASE mp_webhook CHARACTER SET utf8mb4;"
-
-# Ejecutar migraciones
-vendor/bin/phinx migrate
-```
-
-### Con Lerd (desarrollo local)
-
-Este proyecto incluye configuración para Lerd. Si usas [Lerd](https://lerd.dev):
-
-```bash
-lerd link          # Registrar sitio en mp-webhook-api.test
-lerd start         # Iniciar PHP-FPM, MariaDB, Nginx
-```
-
-MariaDB está disponible en `lerd-mariadb-11-8:3306` desde los contenedores (usuario: `root`, contraseña: `lerd`).
+---
 
 ## Endpoints de la API
 
@@ -165,6 +190,10 @@ GET /health
 
 Retorna `{"status":"ok","database":"connected"}`.
 
+### Ejemplos de API
+
+Ver `docs/examples/` para respuestas JSON anonimizadas de la API de Mercado Pago. Útiles como referencia para las estructuras de webhook y pago.
+
 ## Flujo del Webhook
 
 ### `point_integration_wh` (notificación de intent)
@@ -174,7 +203,6 @@ Se recibe cuando una terminal Point crea, completa o cancela un intent de pago.
 ```mermaid
 sequenceDiagram
     autonumber
-    participant T as Terminal Point
     participant MP as Mercado Pago
     participant WH as POST /webhook
     participant WL as RequestLogger
@@ -182,10 +210,8 @@ sequenceDiagram
     participant IA as isAuthorized()
     participant IV as isValid()
     participant IW as IntentWebhookHandler
-    participant MPAPI as MP API (Guzzle)
     participant DB as MySQL (Medoo)
 
-    T->>MP: Pago completado
     MP->>WH: POST /webhook?data.id={uuid}&type=point_integration_wh
     Note right of WH: Headers: X-Request-Id, X-Signature
 
@@ -212,8 +238,8 @@ sequenceDiagram
         end
 
         alt body.payment.id existe
-            IW->>MPAPI: GET /v1/payments/{paymentId}
-            MPAPI-->>IW: Detalles del pago (200+ campos)
+            IW->>MP: GET /v1/payments/{paymentId}
+            MP-->>IW: Detalles del pago (200+ campos)
 
             IW->>DB: SELECT payments WHERE payment_id = ?
             alt Pago no encontrado
@@ -257,17 +283,30 @@ Pasos de procesamiento:
 5. Vincular intent al pago
 6. Registrar evento en `webhook_logs`
 
-### `payment` (legacy, uso infrecuente)
+### `payment` (API legacy)
 
 Notificación directa de pago. Obtiene los detalles del pago y los almacena.
 
-### `order` (Orders API)
+### `order` (API actual)
 
 Notificación de estado de orden. Recibe eventos de orden como `order.created`, `order.updated`, `order.canceled`. Obtiene la orden completa de MP API, almacena/actualiza en la DB local y sincroniza los pagos asociados.
+
+### Notificaciones opcionales
+
+Otros [casos opcionales](https://www.mercadopago.com.ar/developers/es/docs/mp-point/optional-notifications), como Vinculación de aplicaciones (`mp-connect`), Reclamos (`topic_claims_integration_wh`) y Contracargos (`topic_chargebacks_wh`), son registrados en `webhook_logs` y respondidos con HTTP 200 pero no se procesan. No son parte del scope del proyecto, y depende de su uso en un CRM o sistema de pagos.
 
 ## Esquema de Base de Datos
 
 Seis tablas gestionadas por migraciones Phinx:
+
+| Tabla | Descripción |
+|---|---|
+| `terminals` | Terminales Point registradas (external_id, pos_id, sucursal) |
+| `intents` | Intents de pago (intent_id UUID, monto, estado, pago vinculado) |
+| `payments` | Registros de pago (payment_id, datos de tarjeta, montos, timestamps) |
+| `charges` | Desglose de comisiones e impuestos por pago |
+| `orders` | Registros de Orders API (order_id, estado, device_id, detalles de pago) |
+| `webhook_logs` | Log completo de eventos webhook (payload, firma, código de respuesta) |
 
 ```mermaid
 erDiagram
@@ -321,32 +360,6 @@ erDiagram
     intents ||--o| payments : "payment_id"
     payments ||--o{ charges : "payment_id"
 ```
-
-| Tabla | Descripción |
-|---|---|
-| `terminals` | Terminales Point registradas (external_id, pos_id, sucursal) |
-| `intents` | Intents de pago (intent_id UUID, monto, estado, pago vinculado) |
-| `payments` | Registros de pago (payment_id, datos de tarjeta, montos, timestamps) |
-| `charges` | Desglose de comisiones e impuestos por pago |
-| `orders` | Registros de Orders API (order_id, estado, device_id, detalles de pago) |
-| `webhook_logs` | Log completo de eventos webhook (payload, firma, código de respuesta) |
-
-## Desarrollo
-
-```bash
-# Estilo de código (Pint)
-composer lint
-
-# Análisis estático (PHPStan nivel 5)
-composer analyse
-
-# Ambos
-composer test
-```
-
-### Ejemplos de API
-
-Ver `docs/examples/` para respuestas JSON anonimizadas de la API de Mercado Pago. Útiles como referencia para las estructuras de webhook y pago.
 
 ## Estructura del Proyecto
 

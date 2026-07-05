@@ -1,6 +1,5 @@
-# mp-webhook-api — Rewrite Plan
+# Mercado Pago Point Smart integration webservice
 
-Portfolio rewrite of Mercado Pago Point integration webservice.
 Demonstrates a clean webhook processing flow: **receive → validate → respond → log → store**.
 
 ---
@@ -19,7 +18,7 @@ Demonstrates a clean webhook processing flow: **receive → validate → respond
 
 ### API Version Note
 
-The rewrite uses the **legacy Point Integration API** (same as original):
+The first version uses the **legacy Point Integration API**:
 - `POST /point/integration-api/devices/{id}/payment-intents` (create intent)
 - `GET /point/integration-api/payment-intents/{id}` (get intent)
 - `DELETE /point/integration-api/devices/{id}/payment-intents/{intentId}` (cancel)
@@ -253,7 +252,7 @@ Returns array of device objects. (Example file is empty — not critical for MVP
 ## Phase 1 — Database Schema (Phinx)
 
 - [x] Install and configure Phinx (`phinx init`)
-- [x] Create migration: `terminals` table (was `mpt`)
+- [x] Create migration: `terminals` table
   ```sql
   CREATE TABLE terminals (
       id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -268,7 +267,7 @@ Returns array of device objects. (Example file is empty — not critical for MVP
       updated_by      VARCHAR(40)  NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   ```
-- [x] Create migration: `intents` table (was `mpi`)
+- [x] Create migration: `intents` table
   ```sql
   CREATE TABLE intents (
       id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -295,7 +294,7 @@ Returns array of device objects. (Example file is empty — not critical for MVP
   - `device_id`: may be absent in webhook when state != OPEN. Available in intent GET response.
   - `ticket_number`: nullable — may be absent in webhook body.
   - `register_number`: populated from `terminals` table lookup, not from webhook directly.
-- [x] Create migration: `payments` table (was `mpp`)
+- [x] Create migration: `payments` table
   ```sql
   CREATE TABLE payments (
       id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -345,7 +344,7 @@ Returns array of device objects. (Example file is empty — not critical for MVP
   - `holder_doc_number` is VARCHAR — some IDs have leading zeros or letters.
   - `total_amount` is in ARS (not cents). Webhook `amount` field (cents) must be divided by 100 before storing.
   - `created_at_mp`, `approved_at`, `released_at` need timezone conversion from MP's -04:00 to Argentina/Buenos_Aires.
-- [x] Create migration: `charges` table (was `mpc`)
+- [x] Create migration: `charges` table
   ```sql
   CREATE TABLE charges (
       id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
