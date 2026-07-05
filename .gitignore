@@ -9,3 +9,8 @@ composer.lock
 .phpunit.result.cache
 .idea/
 .junie/
+.ai/
+.mcp.json
+.claude/
+*.log
+logs/*.log
