@@ -38,6 +38,8 @@ function webhookRequest(string $type, string $dataId, array $body, array $header
 }
 
 it('dispatches intent webhook to IntentWebhookHandler', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $intentHandler = $this->createMock(IntentWebhookHandler::class);
     $intentHandler->expects($this->once())
         ->method('handle')
@@ -63,9 +65,13 @@ it('dispatches intent webhook to IntentWebhookHandler', function (): void {
 
     expect($result['message'])->toBe('Webhook processed');
     expect($result['type'])->toBe('point_integration_wh');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('dispatches payment webhook to PaymentWebhookHandler', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $paymentHandler = $this->createMock(PaymentWebhookHandler::class);
     $paymentHandler->expects($this->once())
         ->method('handle')
@@ -90,9 +96,13 @@ it('dispatches payment webhook to PaymentWebhookHandler', function (): void {
     $result = $processor->process($request);
 
     expect($result['type'])->toBe('payment');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('dispatches order webhook to OrderWebhookHandler', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $orderHandler = $this->createMock(OrderWebhookHandler::class);
     $orderHandler->expects($this->once())
         ->method('handle')
@@ -116,9 +126,13 @@ it('dispatches order webhook to OrderWebhookHandler', function (): void {
     $result = $processor->process($request);
 
     expect($result['type'])->toBe('order');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('rejects invalid intent body (missing id)', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $logRepo = $this->createMock(WebhookLogRepository::class);
     $processor = buildProcessor(
         $logRepo,
@@ -135,9 +149,13 @@ it('rejects invalid intent body (missing id)', function (): void {
 
     expect($result['message'])->toBe('Webhook processed');
     expect($result['type'])->toBe('point_integration_wh');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('rejects invalid payment body (missing date_created)', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $logRepo = $this->createMock(WebhookLogRepository::class);
     $processor = buildProcessor(
         $logRepo,
@@ -153,9 +171,13 @@ it('rejects invalid payment body (missing date_created)', function (): void {
     $result = $processor->process($request);
 
     expect($result['type'])->toBe('payment');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('rejects invalid order body (missing action)', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $logRepo = $this->createMock(WebhookLogRepository::class);
     $processor = buildProcessor(
         $logRepo,
@@ -170,9 +192,13 @@ it('rejects invalid order body (missing action)', function (): void {
     $result = $processor->process($request);
 
     expect($result['type'])->toBe('order');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('logs unknown webhook type without error', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $logRepo = $this->createMock(WebhookLogRepository::class);
     $processor = buildProcessor(
         $logRepo,
@@ -185,9 +211,13 @@ it('logs unknown webhook type without error', function (): void {
     $result = $processor->process($request);
 
     expect($result['type'])->toBe('unknown_type');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('logs webhook even when handler throws exception', function (): void {
+    $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
+
     $intentHandler = $this->createMock(IntentWebhookHandler::class);
     $intentHandler->method('handle')->willThrowException(new RuntimeException('DB error'));
 
@@ -207,10 +237,13 @@ it('logs webhook even when handler throws exception', function (): void {
     $result = $processor->process($request);
 
     expect($result['message'])->toBe('Webhook processed');
+
+    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
 });
 
 it('validates HMAC signature when MP_WEBHOOK_SECRET is set', function (): void {
     $secret = 'test-webhook-secret';
+    $ts = (string) time();
     $_ENV['MP_WEBHOOK_SECRET'] = $secret;
 
     $logRepo = $this->createMock(WebhookLogRepository::class);
@@ -223,7 +256,6 @@ it('validates HMAC signature when MP_WEBHOOK_SECRET is set', function (): void {
 
     $dataId = 'intent-sec';
     $requestId = 'req-123';
-    $ts = '1719768000';
     $manifest = "id:{$dataId};request-id:{$requestId};ts:{$ts};";
     $v1 = hash_hmac('sha256', $manifest, $secret);
 
@@ -251,6 +283,7 @@ it('validates HMAC signature when MP_WEBHOOK_SECRET is set', function (): void {
 });
 
 it('rejects webhook with invalid HMAC signature', function (): void {
+    $ts = (string) time();
     $_ENV['MP_WEBHOOK_SECRET'] = 'test-webhook-secret';
 
     $intentHandler = $this->createMock(IntentWebhookHandler::class);
@@ -276,7 +309,7 @@ it('rejects webhook with invalid HMAC signature', function (): void {
         '/webhook?type=point_integration_wh&data.id=intent-bad'
     );
     $request = $request
-        ->withHeader('X-Signature', 'ts=123,v1=invalidsignature')
+        ->withHeader('X-Signature', "ts={$ts},v1=invalidsignature")
         ->withHeader('X-Request-Id', 'req-bad')
         ->withBody($bodyStream);
 

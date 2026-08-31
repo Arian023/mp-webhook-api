@@ -24,7 +24,10 @@ class IntentController
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $deviceId = $request->getQueryParams()['device_id'] ?? '';
-        $body = json_decode((string) $request->getBody(), true) ?? [];
+        $body = $this->parseBody($request);
+        if ($body === null) {
+            return $this->jsonResponse($response, ['error' => 'Invalid JSON body'], 400);
+        }
 
         $result = $this->intentService->create($deviceId, $body);
 
@@ -51,10 +54,30 @@ class IntentController
 
     public function refund(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $body = json_decode((string) $request->getBody(), true) ?? [];
+        $body = $this->parseBody($request);
+        if ($body === null) {
+            return $this->jsonResponse($response, ['error' => 'Invalid JSON body'], 400);
+        }
+
         $result = $this->intentService->refund($args['id'], $body['reason'] ?? null);
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    private function parseBody(ServerRequestInterface $request): ?array
+    {
+        $raw = (string) $request->getBody();
+        if ($raw === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function jsonResponse(ResponseInterface $response, array $data, int $status): ResponseInterface
+    {
+        $response->getBody()->write(json_encode($data));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 }

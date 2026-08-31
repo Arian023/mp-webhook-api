@@ -25,8 +25,11 @@ class RequestLoggerMiddleware implements MiddlewareInterface
         $method = $request->getMethod();
         $uri = $request->getUri()->getPath();
 
+        $forwardedFor = $request->getHeaderLine('X-Forwarded-For');
+        $ip = $forwardedFor !== '' ? trim(explode(',', $forwardedFor)[0]) : ($request->getServerParams()['REMOTE_ADDR'] ?? 'unknown');
+
         $this->logger->info("Request: {$method} {$uri}", [
-            'ip' => $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown',
+            'ip' => $ip,
             'query' => $request->getQueryParams(),
         ]);
 

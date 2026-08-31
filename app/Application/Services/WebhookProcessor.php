@@ -95,9 +95,17 @@ class WebhookProcessor
     private function isAuthorized(ServerRequestInterface $request, string $dataId): bool
     {
         $secret = $_ENV['MP_WEBHOOK_SECRET'] ?? '';
+
         if ($secret === '') {
-            $this->logger->warning('MP_WEBHOOK_SECRET not configured — skipping signature validation');
-            return true;
+            $skipValidation = ($_ENV['SKIP_WEBHOOK_VALIDATION'] ?? '') === 'true';
+
+            if ($skipValidation) {
+                $this->logger->warning('MP_WEBHOOK_SECRET not configured — validation skipped via SKIP_WEBHOOK_VALIDATION');
+                return true;
+            }
+
+            $this->logger->critical('MP_WEBHOOK_SECRET not configured — rejecting unsigned webhook');
+            return false;
         }
 
         $signatureHeader = $request->getHeaderLine('X-Signature');
@@ -117,6 +125,15 @@ class WebhookProcessor
         $v1 = $parts['v1'] ?? '';
 
         if ($ts === '' || $v1 === '') {
+            return false;
+        }
+
+        // Replay protection: reject timestamps older than 5 minutes
+        // ts can be seconds (Point) or milliseconds (other APIs)
+        $tsValue = is_numeric($ts) ? (int) $ts : 0;
+        $tsInSeconds = $tsValue > 1_000_000_000_00 ? (int) ($tsValue / 1000) : $tsValue; // normalize ms to s
+        if (abs(time() - $tsInSeconds) > 300) {
+            $this->logger->warning('Webhook replay detected — timestamp too old', ['ts' => $ts]);
             return false;
         }
 

@@ -36,7 +36,7 @@ class ErrorHandlerMiddleware implements MiddlewareInterface
             $response = new Response(500);
             $response->getBody()->write(json_encode([
                 'error' => 'Internal Server Error',
-                'message' => $_ENV['APP_DEBUG'] === 'true' ? $e->getMessage() : 'Something went wrong',
+                'message' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN) ? $e->getMessage() : 'Something went wrong',
             ]));
             return $response->withHeader('Content-Type', 'application/json');
         }

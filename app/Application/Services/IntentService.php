@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Services;
 
-use App\Infrastructure\Helpers\DateHelper;
+use App\Infrastructure\Helpers\PaymentDataMapper;
 use App\Infrastructure\MercadoPago\MercadoPagoClient;
 use App\Infrastructure\Repositories\IntentRepository;
 use App\Infrastructure\Repositories\PaymentRepository;
@@ -48,7 +48,7 @@ class IntentService
             'intent_id' => $response['id'],
             'device_id' => $deviceId,
             'external_ref' => $externalRef,
-            'amount' => (int) $amount / 100,
+            'amount' => (int) $amount,
             'intent_status' => 'OPEN',
             'ticket_number' => $ticketNumber,
             'created_at' => date('Y-m-d H:i:s'),
@@ -77,7 +77,7 @@ class IntentService
                 try {
                     $paymentData = $this->mpClient->getPayment($paymentId);
                     $this->paymentRepository->create(array_merge(
-                        $this->mapPaymentData($paymentData, $intentId),
+                        PaymentDataMapper::mapPaymentData($paymentData, $intentId),
                         ['updated_by' => 'api']
                     ));
                 } catch (\Throwable $e) {
@@ -122,15 +122,10 @@ class IntentService
         $response = $this->mpClient->refundPayment($paymentId);
 
         $paymentData = $this->mpClient->getPayment($paymentId);
-        $this->paymentRepository->update($paymentId, [
-            'status' => $paymentData['status'] ?? '',
-            'status_detail' => $paymentData['status_detail'] ?? '',
-            'release_status' => $paymentData['money_release_status'] ?? null,
-            'released_at' => isset($paymentData['money_release_date'])
-                ? DateHelper::toLocal($paymentData['money_release_date'])
-                : null,
-            'updated_by' => 'api',
-        ]);
+        $this->paymentRepository->update($paymentId, array_merge(
+            PaymentDataMapper::mapPaymentUpdate($paymentData),
+            ['updated_by' => 'api'],
+        ));
 
         $this->logger->info('Payment refunded', [
             'intent_id' => $intentId,
@@ -139,51 +134,5 @@ class IntentService
         ]);
 
         return $response;
-    }
-
-    private function mapPaymentData(array $mp, string $intentId): array
-    {
-        $card = $mp['card'] ?? [];
-        $details = $mp['transaction_details'] ?? [];
-        $poi = $mp['point_of_interaction'] ?? [];
-
-        return [
-            'payment_id' => $mp['id'],
-            'intent_id' => $intentId,
-            'external_ref' => $mp['external_reference'] ?? '',
-            'status' => $mp['status'] ?? '',
-            'status_detail' => $mp['status_detail'] ?? '',
-            'payment_type' => $mp['payment_type_id'] ?? null,
-            'payment_method' => $mp['payment_method_id'] ?? null,
-            'total_amount' => $mp['transaction_amount'] ?? 0,
-            'net_received' => $details['net_received_amount'] ?? null,
-            'overpaid_amount' => $details['overpaid_amount'] ?? null,
-            'taxes_amount' => $mp['taxes_amount'] ?? null,
-            'coupon_amount' => $mp['coupon_amount'] ?? null,
-            'installment_amount' => $details['installment_amount'] ?? null,
-            'installments' => $mp['installments'] ?? null,
-            'currency' => $mp['currency_id'] ?? 'ARS',
-            'authorization_code' => $mp['authorization_code'] ?? null,
-            'card_bin' => $card['bin'] ?? null,
-            'card_first_six' => $card['first_six_digits'] ?? null,
-            'card_last_four' => $card['last_four_digits'] ?? null,
-            'card_country' => $card['country'] ?? null,
-            'holder_doc_type' => $card['cardholder']['identification']['type'] ?? null,
-            'holder_doc_number' => isset($card['cardholder']['identification']['number'])
-                ? (string) $card['cardholder']['identification']['number']
-                : null,
-            'holder_name' => $card['cardholder']['name'] ?? null,
-            'created_at_mp' => DateHelper::toLocal($mp['date_created'] ?? date('c')),
-            'approved_at' => isset($mp['date_approved']) ? DateHelper::toLocal($mp['date_approved']) : null,
-            'release_status' => $mp['money_release_status'] ?? null,
-            'released_at' => isset($mp['money_release_date']) ? DateHelper::toLocal($mp['money_release_date']) : null,
-            'is_live' => ($mp['live_mode'] ?? false) ? 'S' : 'N',
-            'device_serial' => $poi['device']['serial_number'] ?? null,
-            'interaction_type' => $poi['type'] ?? 'POINT',
-            'issuer_id' => $mp['issuer_id'] ?? null,
-            'payer_id' => $mp['payer']['id'] ?? null,
-            'store_id' => $mp['store_id'] ?? null,
-            'pos_id' => $mp['pos_id'] ?? null,
-        ];
     }
 }

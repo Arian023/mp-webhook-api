@@ -89,7 +89,7 @@ class MercadoPagoClient
     public function createOrder(array $body): array
     {
         $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-%d-%d', time(), $this->requestCounter);
+        $idempotencyKey = sprintf('mp-webhook-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: createOrder');
         return $this->request('POST', '/v1/orders', [
             'json' => $body,
@@ -106,7 +106,7 @@ class MercadoPagoClient
     public function cancelOrder(string $orderId): array
     {
         $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-cancel-%d-%d', time(), $this->requestCounter);
+        $idempotencyKey = sprintf('mp-webhook-cancel-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: cancelOrder', ['order_id' => $orderId]);
         return $this->request('POST', "/v1/orders/{$orderId}/cancel", [
             'headers' => ['X-Idempotency-Key' => $idempotencyKey],
@@ -116,7 +116,7 @@ class MercadoPagoClient
     public function refundOrder(string $orderId, ?array $body = null): array
     {
         $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-refund-%d-%d', time(), $this->requestCounter);
+        $idempotencyKey = sprintf('mp-webhook-refund-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: refundOrder', ['order_id' => $orderId]);
         $options = ['headers' => ['X-Idempotency-Key' => $idempotencyKey]];
         if ($body !== null) {
@@ -129,13 +129,27 @@ class MercadoPagoClient
     {
         try {
             $response = $this->client->request($method, $uri, $options);
+            $statusCode = $response->getStatusCode();
             $body = json_decode($response->getBody()->getContents(), true);
 
             $this->logger->debug('MP API response', [
                 'method' => $method,
                 'uri' => $uri,
-                'status' => $response->getStatusCode(),
+                'status' => $statusCode,
             ]);
+
+            // Treat 4xx as exceptions — MP returns error JSON, not data
+            if ($statusCode >= 400) {
+                $errorMsg = is_array($body) ? ($body['message'] ?? 'Unknown error') : 'Non-JSON response';
+                throw new MercadoPagoException(
+                    "MP API {$method} {$uri} returned {$statusCode}: {$errorMsg}",
+                    0, null, $statusCode, $uri
+                );
+            }
+
+            if (!is_array($body)) {
+                throw new MercadoPagoException("MP API {$method} {$uri} returned non-JSON response", 0, null, $statusCode, $uri);
+            }
 
             return $body;
         } catch (GuzzleException $e) {
@@ -144,7 +158,7 @@ class MercadoPagoClient
                 'uri' => $uri,
                 'message' => $e->getMessage(),
             ]);
-            throw new MercadoPagoException("MP API {$method} {$uri} failed: {$e->getMessage()}", 0, $e);
+            throw new MercadoPagoException("MP API {$method} {$uri} failed: {$e->getMessage()}", 0, $e, null, $uri);
         }
     }
 }

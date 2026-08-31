@@ -41,7 +41,6 @@ class IntentRepository
     {
         $changed = $this->database->getConnection()->update('intents', [
             'intent_status' => $status,
-            'updated_by' => 'api',
         ], ['intent_id' => $intentId])->rowCount() > 0;
 
         if ($changed) {
@@ -52,7 +51,6 @@ class IntentRepository
 
     public function updateWithPayment(string $intentId, array $paymentData): bool
     {
-        $paymentData['updated_by'] = 'api';
         $changed = $this->database->getConnection()->update('intents', $paymentData, ['intent_id' => $intentId])->rowCount() > 0;
 
         if ($changed) {

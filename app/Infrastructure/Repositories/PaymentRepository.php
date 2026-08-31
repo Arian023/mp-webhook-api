@@ -38,7 +38,6 @@ class PaymentRepository
 
     public function update(int $paymentId, array $data): bool
     {
-        $data['updated_by'] = 'api';
         $changed = $this->database->getConnection()->update('payments', $data, ['payment_id' => $paymentId])->rowCount() > 0;
 
         if ($changed) {
@@ -49,12 +48,20 @@ class PaymentRepository
 
     public function insertCharges(int $paymentInternalId, int $paymentRef, array $charges): void
     {
+        if (empty($charges)) {
+            return;
+        }
+
+        $rows = [];
         foreach ($charges as $charge) {
-            $this->database->getConnection()->insert('charges', array_merge($charge, [
+            $rows[] = array_merge($charge, [
                 'payment_id' => $paymentInternalId,
                 'payment_ref' => $paymentRef,
-            ]));
+            ]);
         }
+
+        $this->database->getConnection()->insert('charges', $rows);
+
         $this->logger->debug('Charges inserted', [
             'payment_id' => $paymentInternalId,
             'count' => count($charges),

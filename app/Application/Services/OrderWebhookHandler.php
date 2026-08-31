@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Services;
 
 use App\Infrastructure\Helpers\DateHelper;
+use App\Infrastructure\Helpers\PaymentDataMapper;
 use App\Infrastructure\MercadoPago\MercadoPagoClient;
 use App\Infrastructure\Repositories\OrderRepository;
 use App\Infrastructure\Repositories\PaymentRepository;
@@ -94,29 +95,41 @@ class OrderWebhookHandler
         $paymentMethod = $payment['payment_method'] ?? [];
 
         if ($existing === null) {
-            $this->paymentRepository->create([
-                'payment_id' => $paymentId,
-                'intent_id' => $orderId,
-                'terminal_id' => $terminalId,
-                'external_ref' => $orderData['external_reference'] ?? '',
-                'status' => $payment['status'] ?? '',
-                'status_detail' => $payment['status_detail'] ?? '',
-                'payment_type' => $paymentMethod['type'] ?? null,
-                'payment_method' => $paymentMethod['id'] ?? null,
-                'total_amount' => (float) ($payment['amount'] ?? $orderData['total_amount'] ?? 0),
-                'installments' => $paymentMethod['installments'] ?? null,
-                'created_at_mp' => DateHelper::toLocal($orderData['created_date'] ?? date('c')),
-                'approved_at' => $payment['status'] === 'processed' ? date('Y-m-d H:i:s') : null,
-                'is_live' => ($orderData['live_mode'] ?? false) ? 'S' : 'N',
-                'interaction_type' => 'POINT',
-                'updated_by' => 'webhook',
-            ]);
+            $this->paymentRepository->create(array_merge(
+                PaymentDataMapper::mapPaymentData(
+                    [
+                        'id' => $paymentId,
+                        'external_reference' => $orderData['external_reference'] ?? '',
+                        'status' => $payment['status'] ?? '',
+                        'status_detail' => $payment['status_detail'] ?? '',
+                        'payment_type_id' => $paymentMethod['type'] ?? null,
+                        'payment_method_id' => $paymentMethod['id'] ?? null,
+                        'transaction_amount' => $payment['amount'] ?? $orderData['total_amount'] ?? 0,
+                        'installments' => $paymentMethod['installments'] ?? null,
+                        'currency_id' => 'ARS',
+                        'live_mode' => $orderData['live_mode'] ?? false,
+                        'date_created' => $orderData['created_date'] ?? date('c'),
+                        'date_approved' => $payment['status'] === 'processed' ? date('c') : null,
+                        'point_of_interaction' => ['type' => 'POINT'],
+                        'transaction_details' => [],
+                        'card' => [],
+                    ],
+                    null,   // no intent_id
+                    $terminalId,
+                    $orderId   // order_id
+                ),
+                ['updated_by' => 'webhook']
+            ));
         } else {
-            $update = [
-                'status' => $payment['status'] ?? '',
-                'status_detail' => $payment['status_detail'] ?? '',
-                'updated_by' => 'webhook',
-            ];
+            $update = array_merge(
+                PaymentDataMapper::mapPaymentUpdate([
+                    'status' => $payment['status'] ?? '',
+                    'status_detail' => $payment['status_detail'] ?? '',
+                    'money_release_status' => null,
+                    'money_release_date' => null,
+                ]),
+                ['updated_by' => 'webhook']
+            );
             if ($payment['status'] === 'processed' && $existing['approved_at'] === null) {
                 $update['approved_at'] = date('Y-m-d H:i:s');
             }

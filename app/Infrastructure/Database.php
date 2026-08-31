@@ -33,4 +33,19 @@ class Database
 
         return $this->connection;
     }
+
+    public function beginTransaction(): void
+    {
+        $this->getConnection()->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->getConnection()->pdo->commit();
+    }
+
+    public function rollback(): void
+    {
+        $this->getConnection()->pdo->rollBack();
+    }
 }
