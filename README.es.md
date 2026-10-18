@@ -9,6 +9,11 @@ https://www.mercadopago.com.ar/developers/es/docs/mp-point/overview
 
 ## Instalación
 
+> **Compatibilidad:** Point y QR están migrando a Orders API. El receptor admite
+> `order`/`orders` para ambos productos; la creación local de órdenes es solo Point.
+> Legacy se conserva, pero Mercado Pago anuncia su sustitución.
+> Ver [evaluación, correcciones y límites](docs/COMPATIBILITY.es.md).
+
 ### Prerrequisitos
 
 - PHP 8.4.1+ con extensiones `pdo_mysql`, `json`, `mbstring`, `openssl`
@@ -109,8 +114,6 @@ En `composer test` se omiten salvo que `RUN_MYSQL_TESTS=1`.
   se traducen a 502. Las mutaciones legacy Point no se reintentan automáticamente.
 - En producción: `APP_DEBUG=false`, `SKIP_WEBHOOK_VALIDATION=false`, document root
   en `public/` y `composer install --no-dev --optimize-autoloader`.
-
-Ver [la revisión actualizada](docs/REVIEW.es.md) para límites y riesgos pendientes.
 
 ### Base de datos
 
@@ -327,9 +330,9 @@ Pasos de procesamiento:
 
 Notificación directa de pago. Obtiene los detalles del pago y los almacena.
 
-### `order` (API actual)
+### `order` / `orders` (API actual, Point y QR)
 
-Notificación de estado de orden. Recibe eventos de orden como `order.created`, `order.updated`, `order.canceled`. Obtiene la orden completa de MP API, almacena/actualiza en la DB local y sincroniza los pagos asociados.
+Notificación de estado de orden. Recibe eventos como `order.processed`, `order.canceled`, `order.refunded` y `order.expired`; Point también contempla `order.action_required` y `order.failed`. Obtiene la orden completa de MP API, almacena/actualiza en la DB local y sincroniza los pagos asociados cuando tienen referencia numérica. Suscribir **Order (Mercado Pago)** en Tus integraciones; el éxito de Orders es `processed`, no `approved`.
 
 ### Notificaciones opcionales
 

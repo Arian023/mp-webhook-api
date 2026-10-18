@@ -144,7 +144,7 @@ class WebhookProcessor
             if (count($pair) !== 2) {
                 return false;
             }
-            [$key, $value] = $pair;
+            [$key, $value] = array_map('trim', $pair);
             if (isset($parts[$key])) {
                 return false;
             }
@@ -154,7 +154,7 @@ class WebhookProcessor
         $ts = $parts['ts'] ?? '';
         $v1 = $parts['v1'] ?? '';
 
-        if (!ctype_digit($ts) || !preg_match('/^[a-f0-9]{64}$/', $v1) || $requestId === '' || $dataId === '') {
+        if (!ctype_digit($ts) || !preg_match('/^[a-f0-9]{64}$/', $v1) || $dataId === '') {
             return false;
         }
 
@@ -167,7 +167,11 @@ class WebhookProcessor
             return false;
         }
 
-        $manifest = 'id:' . strtolower($dataId) . ";request-id:{$requestId};ts:{$ts};";
+        $manifest = 'id:' . strtolower($dataId) . ';';
+        if ($requestId !== '') {
+            $manifest .= "request-id:{$requestId};";
+        }
+        $manifest .= "ts:{$ts};";
         $expected = hash_hmac('sha256', $manifest, (string) $secret);
 
         return hash_equals($expected, $v1);

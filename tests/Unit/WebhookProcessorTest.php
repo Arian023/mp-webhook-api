@@ -370,3 +370,31 @@ it('rejects webhook with invalid HMAC signature', function (): void {
 
     unset($_ENV['MP_WEBHOOK_SECRET']);
 });
+
+it('dispatches signed current Point and QR events with millisecond timestamps', function (string $type, bool $requestIdPresent): void {
+    $_ENV['MP_WEBHOOK_SECRET'] = 'test-secret';
+    try {
+        $id = 'ORD01JYHTJA9M4NKTA06K7M808NJD';
+        $ts = (string) (time() * 1000);
+        $manifest = 'id:' . strtolower($id) . ';'
+            . ($requestIdPresent ? 'request-id:req-test;' : '') . "ts:{$ts};";
+        $signature = hash_hmac('sha256', $manifest, 'test-secret');
+        $body = ['type' => $type, 'action' => 'order.processed', 'data' => ['id' => $id]];
+        $handler = $this->createMock(OrderWebhookHandler::class);
+        $handler->expects($this->once())->method('handle')->with($body, $id);
+        $headers = ['X-Signature' => "ts= {$ts}, v1= {$signature}"];
+        if ($requestIdPresent) {
+            $headers['X-Request-Id'] = 'req-test';
+        }
+        $processor = buildProcessor(
+            $this->createMock(WebhookLogRepository::class),
+            $this->createMock(IntentWebhookHandler::class),
+            $this->createMock(PaymentWebhookHandler::class),
+            $handler,
+        );
+
+        expect($processor->process(webhookRequest($type, $id, $body, $headers))['type'])->toBe($type);
+    } finally {
+        unset($_ENV['MP_WEBHOOK_SECRET']);
+    }
+})->with(['order', 'orders'])->with([true, false]);

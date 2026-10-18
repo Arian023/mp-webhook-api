@@ -14,7 +14,9 @@ function orderFromMp(array $overrides = []): array
 {
     return array_merge([
         'id' => 'ORD-TEST-001',
-        'status' => 'paid',
+        'status' => 'processed',
+        'type' => 'point',
+        'currency' => 'ARS',
         'status_detail' => 'accredited',
         'total_amount' => 1500.00,
         'external_reference' => 'REF-001',
@@ -81,7 +83,7 @@ it('creates new order from webhook when not found locally', function (): void {
         ->with($this->callback(
             fn (array $data) =>
             $data['order_id'] === 'ORD-TEST-001'
-            && $data['status'] === 'paid'
+            && $data['status'] === 'processed'
             && $data['amount'] === 1500.00
             && $data['device_id'] === 'DEVICE-001'
             && $data['updated_by'] === 'webhook'
@@ -107,6 +109,9 @@ it('updates existing order from webhook', function (): void {
         ->with('ORD-TEST-001', $this->callback(
             fn (array $data) =>
             $data['status'] === 'canceled'
+            && $data['payment_transaction_id'] === '12345678'
+            && $data['payment_status'] === 'processed'
+            && $data['payment_method_id'] === 'visa'
             && $data['action'] === 'order.updated'
             && $data['updated_by'] === 'webhook'
         ));
@@ -166,6 +171,7 @@ it('updates existing payment from order webhook', function (): void {
             fn (array $data) =>
             $data['status'] === 'processed'
             && $data['updated_by'] === 'webhook'
+            && $data['order_id'] === 'ORD-TEST-001'
             && isset($data['approved_at'])
         ));
 
@@ -222,4 +228,49 @@ it('propagates failures fetching orders so the webhook can be retried', function
     $handler = buildHandler($mpClient, $orderRepo);
     expect(fn () => $handler->handle(['action' => 'order.created'], 'ORD-FAIL'))->toThrow(MercadoPagoException::class);
 
+});
+
+it('syncs QR orders without inventing a Point terminal or querying Payments API', function (bool $nestedReference): void {
+    $order = orderFromMp([
+        'type' => 'qr',
+        'currency' => 'UYU',
+        'config' => ['qr' => ['external_pos_id' => 'CAJA001', 'mode' => 'static']],
+    ]);
+    if ($nestedReference) {
+        unset($order['transactions']['payments'][0]['reference_id']);
+        $order['transactions']['payments'][0]['reference'] = ['id' => '87654321'];
+    }
+    $order['transactions']['payments'][0]['id'] = 'PAY01K22Y503EJ8JHGF64KGY1PZ2B';
+    $client = $this->createMock(MercadoPagoClient::class);
+    $client->method('getOrder')->willReturn($order);
+    $client->expects($this->never())->method('getPayment');
+    $orders = $this->createMock(OrderRepository::class);
+    $orders->expects($this->once())->method('create')->with($this->callback(
+        fn (array $data): bool => $data['device_id'] === null
+            && $data['payment_transaction_id'] === 'PAY01K22Y503EJ8JHGF64KGY1PZ2B',
+    ));
+    $payments = $this->createMock(PaymentRepository::class);
+    $payments->expects($this->once())->method('create')->with($this->callback(
+        fn (array $data): bool => $data['payment_id'] === 87654321
+            && $data['interaction_type'] === 'QR'
+            && $data['currency'] === 'UYU'
+            && $data['terminal_id'] === null,
+    ));
+    $terminals = $this->createMock(TerminalRepository::class);
+    $terminals->expects($this->never())->method('findByExternalId');
+
+    buildHandler($client, $orders, $payments, $terminals)->handle(['action' => 'order.processed'], $order['id']);
+})->with([false, true]);
+
+it('does not use a transaction ID as a numeric payment ID before accreditation', function (): void {
+    $order = orderFromMp(['status' => 'created']);
+    unset($order['transactions']['payments'][0]['reference_id']);
+    $client = $this->createMock(MercadoPagoClient::class);
+    $client->method('getOrder')->willReturn($order);
+    $payments = $this->createMock(PaymentRepository::class);
+    $payments->expects($this->never())->method('findByPaymentId');
+    $payments->expects($this->never())->method('create');
+
+    buildHandler($client, $this->createMock(OrderRepository::class), $payments)
+        ->handle(['action' => 'order.created'], $order['id']);
 });

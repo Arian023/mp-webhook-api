@@ -9,6 +9,11 @@ https://www.mercadopago.com.ar/developers/es/docs/mp-point/overview
 
 ## Installation
 
+> **Point/QR compatibility:** Mercado Pago is migrating legacy integrations to
+> Orders API. This receiver supports `order`/`orders` for Point and QR; local order
+> creation remains Point-only. See the [compatibility review (Spanish)](docs/COMPATIBILITY.es.md)
+> for fixes, official sources, deployment requirements, and limitations.
+
 ### Prerequisites
 
 - PHP 8.4.1+ with `pdo_mysql`, `json`, `mbstring`, `openssl` extensions
@@ -105,8 +110,6 @@ run `composer check-platform-reqs` to validate the actual PHP runtime.
   `RUN_MYSQL_TESTS=1`. Production: `APP_DEBUG=false`,
   `SKIP_WEBHOOK_VALIDATION=false`, document root `public/`, and
   `composer install --no-dev --optimize-autoloader`.
-
-See the [updated Spanish review](docs/REVIEW.es.md) for remaining limitations.
 
 ### Database
 

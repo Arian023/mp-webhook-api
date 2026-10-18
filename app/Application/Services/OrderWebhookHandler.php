@@ -52,12 +52,7 @@ class OrderWebhookHandler
                 'status' => $orderData['status'] ?? 'unknown',
             ]);
         } else {
-            $this->orderRepository->update($dataId, [
-                'status' => $orderData['status'] ?? $existingOrder['status'],
-                'status_detail' => $orderData['status_detail'] ?? null,
-                'action' => $action,
-                'updated_by' => 'webhook',
-            ]);
+            $this->orderRepository->update($dataId, $this->mapOrderData($orderData, $action));
         }
 
         $payments = $orderData['transactions']['payments'] ?? [];
@@ -77,8 +72,10 @@ class OrderWebhookHandler
 
     private function syncPayment(array $orderData, array $payment, string $orderId): void
     {
-        $paymentRefId = $payment['reference_id'] ?? null;
-        if ($paymentRefId === null || !is_numeric($paymentRefId)) {
+        // GET responses use reference_id; notification-shaped resources use reference.id.
+        // Neither is the alphanumeric PAY... transaction ID.
+        $paymentRefId = $payment['reference_id'] ?? $payment['reference']['id'] ?? null;
+        if (filter_var($paymentRefId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
             return;
         }
 
@@ -106,11 +103,11 @@ class OrderWebhookHandler
                         'payment_method_id' => $paymentMethod['id'] ?? null,
                         'transaction_amount' => $payment['amount'] ?? $orderData['total_amount'] ?? 0,
                         'installments' => $paymentMethod['installments'] ?? null,
-                        'currency_id' => 'ARS',
+                        'currency_id' => $orderData['currency'] ?? 'ARS',
                         'live_mode' => $orderData['live_mode'] ?? false,
                         'date_created' => $orderData['created_date'] ?? date('c'),
                         'date_approved' => ($payment['status'] ?? '') === 'processed' ? date('c') : null,
-                        'point_of_interaction' => ['type' => 'POINT'],
+                        'point_of_interaction' => ['type' => ($orderData['type'] ?? 'point') === 'qr' ? 'QR' : 'POINT'],
                         'transaction_details' => [],
                         'card' => [],
                     ],
@@ -128,7 +125,7 @@ class OrderWebhookHandler
                     'money_release_status' => null,
                     'money_release_date' => null,
                 ]),
-                ['updated_by' => 'webhook']
+                ['updated_by' => 'webhook', 'order_id' => $orderId]
             );
             if (($payment['status'] ?? '') === 'processed' && ($existing['approved_at'] ?? null) === null) {
                 $update['approved_at'] = date('Y-m-d H:i:s');
