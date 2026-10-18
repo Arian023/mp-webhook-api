@@ -44,7 +44,7 @@ class PaymentWebhookHandler
                 'payment_id' => $paymentId,
                 'message' => $e->getMessage(),
             ]);
-            return;
+            throw $e;
         }
 
         $existingPayment = $this->paymentRepository->findByPaymentId($paymentId);

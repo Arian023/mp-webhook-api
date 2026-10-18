@@ -11,7 +11,7 @@ https://www.mercadopago.com.ar/developers/es/docs/mp-point/overview
 
 ### Prerrequisitos
 
-- PHP 8.3+ con extensiones `pdo_mysql`, `json`, `mbstring`, `openssl`
+- PHP 8.4.1+ con extensiones `pdo_mysql`, `json`, `mbstring`, `openssl`
 - MariaDB 10.6+ o MySQL 8.0+ (para compatibilidad con columnas `json`, sino ajustar tabla `webhook_logs`)
 - Composer 2.x
 
@@ -33,17 +33,18 @@ DB_NAME=mp_webhook
 DB_USER=root
 DB_PASS=
 
+API_AUTH_TOKEN=credencial-local-independiente
 MP_ACCESS_TOKEN=APP_USR-...
 MP_WEBHOOK_SECRET=tu-webhook-secret
 ```
 
 ## Stack Tecnológico
 
-- [**PHP**](https://www.php.net/) 8.3 en adelante
+- [**PHP**](https://www.php.net/) 8.4.1 en adelante
 - [**Slim 4**](https://www.slimframework.com/) — Micro framework PSR-7/15
 - [**PHP-DI**](https://php-di.org/doc/frameworks/slim.html) — Contenedor de inyección de dependencias
 - [**Medoo**](https://medoo.in/) — Abstracción de base de datos ligera, basada en PDO.
-- [**Guzzle 7**](https://docs.guzzlephp.org/en/stable/index.html) — Cliente HTTP con middleware de reintentos
+- [**Guzzle 8**](https://docs.guzzlephp.org/en/stable/index.html) — Cliente HTTP con middleware de reintentos
 - [**Monolog 3**](https://seldaek.github.io/monolog/) — Logging a archivos, consola o base de datos
 - [**Phinx**](https://phinx.org/) — Migraciones de base de datos
 - [**Carbon**](https://carbon.nesbot.com/) — Manejo de fechas
@@ -62,15 +63,54 @@ MariaDB está disponible en `lerd-mariadb-11-8:3306` desde los contenedores (usu
 Alternativamente, se puede usar [php.new](https://php.new/) o [Laravel Herd](https://herd.laravel.com/) en Windows / MacOS para correr el proyecto rápidamente.
 
 ```bash
-# Estilo de código (Pint)
+# Comprobar estilo sin modificar archivos (Pint)
 composer lint
+
+# Aplicar formato / refactorizaciones (Rector, PHP 8.4)
+composer format
+composer refactor
 
 # Análisis estático (PHPStan nivel 5)
 composer analyse
 
-# Ambos
+# Análisis, estilo y pruebas
 composer test
 ```
+
+Composer resuelve las dependencias para PHP 8.4.1 mediante `config.platform.php`.
+El parche mínimo permite usar Symfony 8.1 mantenido, sin quedarse en Symfony 8.0.
+CI comprueba PHP 8.4 y 8.5, incluyendo persistencia con MySQL 8.4.
+Después de instalar, ejecutar `composer check-platform-reqs` para validar el PHP real.
+
+`composer test:mysql` ejecuta las pruebas de persistencia con la conexión de `.env`;
+solo crea tablas temporales de sesión, sin modificar tablas de la aplicación.
+En `composer test` se omiten salvo que `RUN_MYSQL_TESTS=1`.
+
+### Cambios de contrato y despliegue
+
+- Autenticar `/api/*` con `Authorization: Bearer <API_AUTH_TOKEN>`, nunca con el
+  token del proveedor. Configurar una credencial aleatoria independiente en `.env`;
+  no hay fallback a `MP_ACCESS_TOKEN`. No se modifica automáticamente tu `.env`.
+- Orders (crear/cancelar/reembolsar) y todos los reembolsos requieren
+  `X-Idempotency-Key`: 1–64 letras, números, guiones o guiones bajos. El cliente debe
+  persistir una clave por operación de negocio y reutilizarla en todos los reintentos,
+  incluso después de un timeout o fallo local posterior al éxito en MP. Una operación
+  distinta requiere otra clave; no reutilizarla con un cuerpo diferente.
+- Los cuerpos deben ser objetos JSON con `Content-Type: application/json`.
+  Importes positivos: centavos enteros en Intents, unidades monetarias con hasta dos
+  decimales en Orders. Orders requiere `external_reference` alfanumérica de hasta
+  64 caracteres (también `-` y `_`), y acepta `expiration_time` ISO 8601 entre
+  `PT30S` y `PT3H` (por ejemplo, `PT5M`).
+- Los webhooks fallidos devuelven **503** y revierten los cambios de dominio para
+  permitir reentregas; los cargos repetidos se actualizan, no se duplican.
+  Los eventos inválidos/desconocidos se registran e ignoran con 200 por compatibilidad.
+  Se admite `type=orders` y el alias anterior `order`.
+- Los errores MP 400/404/409/422 conservan su código; los demás fallos del proveedor
+  se traducen a 502. Las mutaciones legacy Point no se reintentan automáticamente.
+- En producción: `APP_DEBUG=false`, `SKIP_WEBHOOK_VALIDATION=false`, document root
+  en `public/` y `composer install --no-dev --optimize-autoloader`.
+
+Ver [la revisión actualizada](docs/REVIEW.es.md) para límites y riesgos pendientes.
 
 ### Base de datos
 

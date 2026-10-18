@@ -40,7 +40,7 @@ class OrderWebhookHandler
                 'order_id' => $dataId,
                 'message' => $e->getMessage(),
             ]);
-            return;
+            throw $e;
         }
 
         $existingOrder = $this->orderRepository->findByOrderId($dataId);
@@ -109,7 +109,7 @@ class OrderWebhookHandler
                         'currency_id' => 'ARS',
                         'live_mode' => $orderData['live_mode'] ?? false,
                         'date_created' => $orderData['created_date'] ?? date('c'),
-                        'date_approved' => $payment['status'] === 'processed' ? date('c') : null,
+                        'date_approved' => ($payment['status'] ?? '') === 'processed' ? date('c') : null,
                         'point_of_interaction' => ['type' => 'POINT'],
                         'transaction_details' => [],
                         'card' => [],
@@ -130,7 +130,7 @@ class OrderWebhookHandler
                 ]),
                 ['updated_by' => 'webhook']
             );
-            if ($payment['status'] === 'processed' && $existing['approved_at'] === null) {
+            if (($payment['status'] ?? '') === 'processed' && ($existing['approved_at'] ?? null) === null) {
                 $update['approved_at'] = date('Y-m-d H:i:s');
             }
             $this->paymentRepository->update($paymentId, $update);

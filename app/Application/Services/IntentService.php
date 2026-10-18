@@ -48,7 +48,7 @@ class IntentService
             'intent_id' => $response['id'],
             'device_id' => $deviceId,
             'external_ref' => $externalRef,
-            'amount' => (int) $amount,
+            'amount' => (int) $amount / 100,
             'intent_status' => 'OPEN',
             'ticket_number' => $ticketNumber,
             'created_at' => date('Y-m-d H:i:s'),
@@ -110,7 +110,7 @@ class IntentService
         return $response;
     }
 
-    public function refund(string $intentId, ?string $reason): array
+    public function refund(string $intentId, ?string $reason, string $idempotencyKey): array
     {
         $intent = $this->intentRepository->findByIntentId($intentId);
 
@@ -119,7 +119,7 @@ class IntentService
         }
 
         $paymentId = (int) $intent['payment_id'];
-        $response = $this->mpClient->refundPayment($paymentId);
+        $response = $this->mpClient->refundPayment($paymentId, $idempotencyKey);
 
         $paymentData = $this->mpClient->getPayment($paymentId);
         $this->paymentRepository->update($paymentId, array_merge(

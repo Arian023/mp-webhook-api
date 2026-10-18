@@ -8,13 +8,14 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\HandlerStack;
 use GuzzleRetry\GuzzleRetryMiddleware;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * HTTP client for the Mercado Pago API.
  *
- * Wraps Guzzle with retry middleware (5 attempts on 429/5xx/timeout).
+ * Retries reads and keyed mutations on 429/5xx/timeout; never unkeyed mutations.
  * Provides typed methods for the legacy Point Integration API, the
  * shared Payments API, and the new Orders API. All methods throw
  * MercadoPagoException on failure.
@@ -23,24 +24,23 @@ class MercadoPagoClient
 {
     private readonly Client $client;
 
-    private int $requestCounter = 0;
-
     public function __construct(
         private readonly string $accessToken,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        ?HandlerStack $handlerStack = null,
     ) {
-        $handlerStack = HandlerStack::create();
+        $handlerStack ??= HandlerStack::create();
         $handlerStack->push(GuzzleRetryMiddleware::factory([
             'max_retry_attempts' => 5,
             'retry_on_status' => [429, 500, 502, 503, 504],
             'retry_on_timeout' => true,
-            'on_retry_callback' => function (int $attemptNumber, float $delay, array $requestOptions, ?ResponseInterface $response): void {
+            'on_retry_callback' => function (int $attemptNumber, float $delay, RequestInterface $request, array $requestOptions, ?ResponseInterface $response): void {
                 $status = $response instanceof ResponseInterface ? $response->getStatusCode() : 'timeout';
                 $this->logger->warning('MP API retry', [
                     'attempt' => $attemptNumber,
                     'delay' => round($delay, 2),
                     'status' => $status,
-                    'uri' => $requestOptions['uri'] ?? 'unknown',
+                    'uri' => (string) $request->getUri(),
                 ]);
             },
         ]));
@@ -49,6 +49,7 @@ class MercadoPagoClient
             'base_uri' => 'https://api.mercadopago.com',
             'timeout' => 25,
             'handler' => $handlerStack,
+            'http_errors' => false,
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->accessToken,
                 'Content-Type' => 'application/json',
@@ -80,20 +81,20 @@ class MercadoPagoClient
         return $this->request('GET', "/v1/payments/{$paymentId}");
     }
 
-    public function refundPayment(int $paymentId): array
+    public function refundPayment(int $paymentId, string $idempotencyKey): array
     {
         $this->logger->debug('MP API: refundPayment', ['payment_id' => $paymentId]);
-        return $this->request('POST', "/v1/payments/{$paymentId}/refunds");
+        return $this->request('POST', "/v1/payments/{$paymentId}/refunds", [
+            'headers' => ['X-Idempotency-Key' => $this->validateKey($idempotencyKey)],
+        ]);
     }
 
-    public function createOrder(array $body): array
+    public function createOrder(array $body, string $idempotencyKey): array
     {
-        $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: createOrder');
         return $this->request('POST', '/v1/orders', [
             'json' => $body,
-            'headers' => ['X-Idempotency-Key' => $idempotencyKey],
+            'headers' => ['X-Idempotency-Key' => $this->validateKey($idempotencyKey)],
         ]);
     }
 
@@ -103,22 +104,18 @@ class MercadoPagoClient
         return $this->request('GET', "/v1/orders/{$orderId}");
     }
 
-    public function cancelOrder(string $orderId): array
+    public function cancelOrder(string $orderId, string $idempotencyKey): array
     {
-        $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-cancel-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: cancelOrder', ['order_id' => $orderId]);
         return $this->request('POST', "/v1/orders/{$orderId}/cancel", [
-            'headers' => ['X-Idempotency-Key' => $idempotencyKey],
+            'headers' => ['X-Idempotency-Key' => $this->validateKey($idempotencyKey)],
         ]);
     }
 
-    public function refundOrder(string $orderId, ?array $body = null): array
+    public function refundOrder(string $orderId, ?array $body, string $idempotencyKey): array
     {
-        $this->requestCounter++;
-        $idempotencyKey = sprintf('mp-webhook-refund-%d-%s', time(), bin2hex(random_bytes(4)));
         $this->logger->debug('MP API: refundOrder', ['order_id' => $orderId]);
-        $options = ['headers' => ['X-Idempotency-Key' => $idempotencyKey]];
+        $options = ['headers' => ['X-Idempotency-Key' => $this->validateKey($idempotencyKey)]];
         if ($body !== null) {
             $options['json'] = $body;
         }
@@ -127,6 +124,8 @@ class MercadoPagoClient
 
     private function request(string $method, string $uri, array $options = []): array
     {
+        // Legacy Point mutations have no documented idempotency contract.
+        $options['retry_enabled'] = $method === 'GET' || isset($options['headers']['X-Idempotency-Key']);
         try {
             $response = $this->client->request($method, $uri, $options);
             $statusCode = $response->getStatusCode();
@@ -143,7 +142,10 @@ class MercadoPagoClient
                 $errorMsg = is_array($body) ? ($body['message'] ?? 'Unknown error') : 'Non-JSON response';
                 throw new MercadoPagoException(
                     "MP API {$method} {$uri} returned {$statusCode}: {$errorMsg}",
-                    0, null, $statusCode, $uri
+                    0,
+                    null,
+                    $statusCode,
+                    $uri
                 );
             }
 
@@ -160,5 +162,13 @@ class MercadoPagoClient
             ]);
             throw new MercadoPagoException("MP API {$method} {$uri} failed: {$e->getMessage()}", 0, $e, null, $uri);
         }
+    }
+
+    private function validateKey(string $key): string
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $key)) {
+            throw new \InvalidArgumentException('Invalid X-Idempotency-Key');
+        }
+        return $key;
     }
 }

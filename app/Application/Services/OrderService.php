@@ -17,7 +17,7 @@ class OrderService
     ) {
     }
 
-    public function create(array $body): array
+    public function create(array $body, string $idempotencyKey): array
     {
         $mpBody = [
             'type' => 'point',
@@ -44,7 +44,7 @@ class OrderService
             $mpBody['expiration_time'] = $body['expiration_time'];
         }
 
-        $response = $this->mpClient->createOrder($mpBody);
+        $response = $this->mpClient->createOrder($mpBody, $idempotencyKey);
 
         $this->logger->info('Order created via API', [
             'order_id' => $response['id'] ?? null,
@@ -68,13 +68,13 @@ class OrderService
         return $response;
     }
 
-    public function cancel(string $orderId): array
+    public function cancel(string $orderId, string $idempotencyKey): array
     {
-        $response = $this->mpClient->cancelOrder($orderId);
+        $response = $this->mpClient->cancelOrder($orderId, $idempotencyKey);
 
         $this->orderRepository->update($orderId, [
-            'status' => 'canceled',
-            'status_detail' => 'canceled',
+            'status' => $response['status'] ?? 'canceled',
+            'status_detail' => $response['status_detail'] ?? 'canceled',
             'action' => 'order.canceled',
         ]);
 
@@ -83,14 +83,14 @@ class OrderService
         return $response;
     }
 
-    public function refund(string $orderId, ?string $transactionId = null): array
+    public function refund(string $orderId, ?string $transactionId, string $idempotencyKey): array
     {
         $body = $transactionId !== null ? ['transactions' => [['id' => $transactionId]]] : null;
-        $response = $this->mpClient->refundOrder($orderId, $body);
+        $response = $this->mpClient->refundOrder($orderId, $body, $idempotencyKey);
 
         $this->orderRepository->update($orderId, [
-            'status' => 'refunded',
-            'status_detail' => 'refunded',
+            'status' => $response['status'] ?? 'refunded',
+            'status_detail' => $response['status_detail'] ?? 'refunded',
             'action' => 'order.refunded',
         ]);
 

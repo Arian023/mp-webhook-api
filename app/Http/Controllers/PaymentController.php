@@ -31,7 +31,7 @@ class PaymentController
 
     public function refund(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $result = $this->paymentService->refund((int) $args['id']);
+        $result = $this->paymentService->refund((int) $args['id'], $request->getHeaderLine('X-Idempotency-Key'));
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json');

@@ -5,7 +5,7 @@
                 "mcp"
             ],
             "command": "lerd",
-            "env": {}
+            "type": "stdio"
         }
     }
 }

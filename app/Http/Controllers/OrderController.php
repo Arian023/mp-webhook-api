@@ -22,7 +22,7 @@ class OrderController
             return $this->jsonResponse($response, ['error' => 'Invalid JSON body'], 400);
         }
 
-        $result = $this->orderService->create($body);
+        $result = $this->orderService->create($body, $request->getHeaderLine('X-Idempotency-Key'));
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
@@ -38,7 +38,7 @@ class OrderController
 
     public function cancel(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $result = $this->orderService->cancel($args['id']);
+        $result = $this->orderService->cancel($args['id'], $request->getHeaderLine('X-Idempotency-Key'));
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json');
@@ -51,7 +51,7 @@ class OrderController
             return $this->jsonResponse($response, ['error' => 'Invalid JSON body'], 400);
         }
 
-        $result = $this->orderService->refund($args['id'], $body['transaction_id'] ?? null);
+        $result = $this->orderService->refund($args['id'], $body['transaction_id'] ?? null, $request->getHeaderLine('X-Idempotency-Key'));
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json');

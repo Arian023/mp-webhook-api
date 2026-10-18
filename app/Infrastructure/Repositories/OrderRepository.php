@@ -24,8 +24,7 @@ class OrderRepository
 
     public function create(array $data): int
     {
-        $this->database->getConnection()->insert('orders', $data);
-        $id = (int) $this->database->getConnection()->id();
+        $id = $this->database->upsert('orders', $data);
         $this->logger->debug('Order created', ['id' => $id, 'order_id' => $data['order_id'] ?? null]);
         return $id;
     }

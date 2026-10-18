@@ -59,7 +59,7 @@ class IntentController
             return $this->jsonResponse($response, ['error' => 'Invalid JSON body'], 400);
         }
 
-        $result = $this->intentService->refund($args['id'], $body['reason'] ?? null);
+        $result = $this->intentService->refund($args['id'], $body['reason'] ?? null, $request->getHeaderLine('X-Idempotency-Key'));
 
         $response->getBody()->write(json_encode($result));
         return $response->withHeader('Content-Type', 'application/json');

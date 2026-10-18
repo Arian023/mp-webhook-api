@@ -44,9 +44,9 @@ class PaymentService
         return $paymentData;
     }
 
-    public function refund(int $paymentId): array
+    public function refund(int $paymentId, string $idempotencyKey): array
     {
-        $response = $this->mpClient->refundPayment($paymentId);
+        $response = $this->mpClient->refundPayment($paymentId, $idempotencyKey);
 
         $paymentData = $this->mpClient->getPayment($paymentId);
         $this->paymentRepository->update($paymentId, [

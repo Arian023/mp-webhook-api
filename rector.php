@@ -10,7 +10,7 @@ return RectorConfig::configure()
         __DIR__ . '/bootstrap',
         __DIR__ . '/public',
     ])
-    ->withPhpSets(php83: true)
+    ->withPhpSets(php84: true)
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true

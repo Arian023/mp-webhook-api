@@ -15,6 +15,7 @@ function buildProcessor(
     IntentWebhookHandler $intentHandler,
     PaymentWebhookHandler $paymentHandler,
     OrderWebhookHandler $orderHandler,
+    ?\App\Infrastructure\Database $database = null,
 ): WebhookProcessor {
     return new WebhookProcessor(
         new NullLogger(),
@@ -22,6 +23,7 @@ function buildProcessor(
         $intentHandler,
         $paymentHandler,
         $orderHandler,
+        $database ?? test()->createMock(\App\Infrastructure\Database::class),
     );
 }
 
@@ -36,6 +38,48 @@ function webhookRequest(string $type, string $dataId, array $body, array $header
     }
     return $request;
 }
+
+it('ignores scalar JSON bodies without throwing', function (string $json): void {
+    $logRepo = $this->createMock(WebhookLogRepository::class);
+    $logRepo->expects($this->once())->method('log');
+    $intentHandler = $this->createMock(IntentWebhookHandler::class);
+    $intentHandler->expects($this->never())->method('handle');
+    $processor = buildProcessor(
+        $logRepo,
+        $intentHandler,
+        $this->createMock(PaymentWebhookHandler::class),
+        $this->createMock(OrderWebhookHandler::class),
+    );
+    $request = webhookRequest('point_integration_wh', '123', []);
+    $request = $request->withBody((new \Slim\Psr7\Factory\StreamFactory())->createStream($json));
+
+    expect($processor->process($request)['message'])->toBe('Webhook processed');
+})->with(['true', '123', '"text"', 'null', '{invalid']);
+
+it('rejects malformed signature headers without warnings', function (string $signature): void {
+    $_ENV['MP_WEBHOOK_SECRET'] = 'test-secret';
+    try {
+        $logRepo = $this->createMock(WebhookLogRepository::class);
+        $logRepo->expects($this->once())->method('log')->with(
+            $this->callback(fn (array $data): bool => $data['signature_valid'] === 0),
+        );
+        $intentHandler = $this->createMock(IntentWebhookHandler::class);
+        $intentHandler->expects($this->never())->method('handle');
+        $processor = buildProcessor(
+            $logRepo,
+            $intentHandler,
+            $this->createMock(PaymentWebhookHandler::class),
+            $this->createMock(OrderWebhookHandler::class),
+        );
+        $request = webhookRequest('point_integration_wh', '123', [
+            'id' => '123', 'amount' => 100, 'state' => 'OPEN',
+        ], ['X-Signature' => $signature, 'X-Request-Id' => 'req-test']);
+
+        expect($processor->process($request)['message'])->toBe('Webhook processed');
+    } finally {
+        unset($_ENV['MP_WEBHOOK_SECRET']);
+    }
+})->with(['invalid', 'ts=123,v1', 'ts=123,ts=456,v1=abc', 'ts=abc,v1=abc']);
 
 it('dispatches intent webhook to IntentWebhookHandler', function (): void {
     $_ENV['SKIP_WEBHOOK_VALIDATION'] = 'true';
@@ -222,11 +266,18 @@ it('logs webhook even when handler throws exception', function (): void {
     $intentHandler->method('handle')->willThrowException(new RuntimeException('DB error'));
 
     $logRepo = $this->createMock(WebhookLogRepository::class);
+    $logRepo->expects($this->once())->method('log')->with($this->callback(fn (array $data): bool => $data['response_code'] === 503));
+    $database = $this->createMock(\App\Infrastructure\Database::class);
+    $database->expects($this->once())->method('beginTransaction');
+    $database->method('inTransaction')->willReturn(true);
+    $database->expects($this->once())->method('rollback');
+    $database->expects($this->never())->method('commit');
     $processor = buildProcessor(
         $logRepo,
         $intentHandler,
         $this->createMock(PaymentWebhookHandler::class),
         $this->createMock(OrderWebhookHandler::class),
+        $database,
     );
     $request = webhookRequest('point_integration_wh', 'intent-fail', [
         'id' => 'intent-fail',
@@ -234,11 +285,11 @@ it('logs webhook even when handler throws exception', function (): void {
         'state' => 'OPEN',
     ]);
 
-    $result = $processor->process($request);
-
-    expect($result['message'])->toBe('Webhook processed');
-
-    unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
+    try {
+        expect(fn () => $processor->process($request))->toThrow(\Slim\Exception\HttpException::class, 'Webhook processing failed');
+    } finally {
+        unset($_ENV['SKIP_WEBHOOK_VALIDATION']);
+    }
 });
 
 it('validates HMAC signature when MP_WEBHOOK_SECRET is set', function (): void {

@@ -8,5 +8,5 @@ use App\Http\Middleware\RequestLoggerMiddleware;
 
 /** @var \Slim\App $app */
 /** @var ContainerInterface $container */
-$app->add($container->get(ErrorHandlerMiddleware::class));
 $app->add($container->get(RequestLoggerMiddleware::class));
+$app->add($container->get(ErrorHandlerMiddleware::class));

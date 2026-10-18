@@ -2,24 +2,29 @@
     "name": "arian/mp-webhook-api",
     "description": "Mercado Pago Point webhook processor — Slim 4",
     "type": "project",
+    "license": "MIT",
     "require": {
-        "php": "^8.3 || ^8.4 || ^8.5",
-        "caseyamcl/guzzle_retry_middleware": "^2.12",
+        "php": "^8.4.1",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "caseyamcl/guzzle_retry_middleware": "^3.0",
         "catfan/medoo": "^2.4",
-        "guzzlehttp/guzzle": "^7.9",
+        "guzzlehttp/guzzle": "^8.3",
         "monolog/monolog": "^3.8",
         "nesbot/carbon": "^3.8",
         "php-di/php-di": "^7.0",
         "php-di/slim-bridge": "^3.4",
         "slim/psr7": "^1.7",
         "slim/slim": "^4",
-        "symfony/dotenv": "^7.4"
+        "symfony/dotenv": "^8.1"
     },
     "require-dev": {
         "laravel/pao": "^1.1",
         "laravel/pint": "^1.27",
-        "pestphp/pest": "^4.3",
-        "pestphp/pest-plugin-type-coverage": "^4.0",
+        "pestphp/pest": "^5.3",
+        "pestphp/pest-plugin-type-coverage": "^5.0",
         "phpstan/phpstan": "^2.1",
         "rector/rector": "^2.3",
         "robmorgan/phinx": "^0.16"
@@ -35,11 +40,11 @@
         }
     },
     "scripts": {
-        "lint": [
-            "vendor/bin/rector --no-ansi",
-            "vendor/bin/pint --config pint.json --dirty"
-        ],
+        "lint": "vendor/bin/pint --config pint.json --test",
+        "format": "vendor/bin/pint --config pint.json",
+        "refactor": "vendor/bin/rector --no-ansi",
         "analyse": "vendor/bin/phpstan analyse --no-ansi",
+        "test:mysql": "RUN_MYSQL_TESTS=1 vendor/bin/pest tests/Integration",
         "test": [
             "@analyse",
             "@lint",
@@ -47,6 +52,9 @@
         ]
     },
     "config": {
+        "platform": {
+            "php": "8.4.1"
+        },
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true

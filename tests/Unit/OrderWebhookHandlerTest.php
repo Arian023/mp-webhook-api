@@ -210,7 +210,7 @@ it('skips payment with non-numeric reference_id', function (): void {
     $handler->handle(['action' => 'order.updated'], 'ORD-TEST-001');
 });
 
-it('returns early when MP API fails to fetch order', function (): void {
+it('propagates failures fetching orders so the webhook can be retried', function (): void {
     $mpClient = $this->createMock(MercadoPagoClient::class);
     $mpClient->method('getOrder')
         ->willThrowException(new MercadoPagoException('API error'));
@@ -220,7 +220,6 @@ it('returns early when MP API fails to fetch order', function (): void {
     $orderRepo->expects($this->never())->method('update');
 
     $handler = buildHandler($mpClient, $orderRepo);
-    $handler->handle(['action' => 'order.created'], 'ORD-FAIL');
+    expect(fn () => $handler->handle(['action' => 'order.created'], 'ORD-FAIL'))->toThrow(MercadoPagoException::class);
 
-    $this->expectNotToPerformAssertions();
 });

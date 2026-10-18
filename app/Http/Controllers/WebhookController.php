@@ -11,8 +11,8 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * POST /webhook — Mercado Pago notification endpoint.
  *
- * Delegates all processing to WebhookProcessor. Always returns 200 so MP
- * stops retrying. No bearer auth — the webhook uses HMAC-SHA256 signature
+ * Delegates processing to WebhookProcessor. Failures return 5xx for retry.
+ * No bearer auth — the webhook uses HMAC-SHA256 signature
  * validation instead.
  */
 class WebhookController

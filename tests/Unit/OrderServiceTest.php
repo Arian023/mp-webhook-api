@@ -26,7 +26,7 @@ it('creates an order via MP API', function (): void {
         'device_id' => 'DEVICE-001',
         'external_reference' => 'REF-001',
         'description' => 'Test order',
-    ]);
+    ], 'operation-1');
 
     expect($result['id'])->toBe('ORDTST01ABC');
     expect($result['status'])->toBe('created');
@@ -39,7 +39,7 @@ it('creates order with optional ticket_number and expiration_time', function ():
         ->with($this->callback(
             fn (array $body) =>
             $body['config']['point']['ticket_number'] === 'TK-999'
-            && $body['expiration_time'] === 300
+            && $body['expiration_time'] === 'PT5M'
         ))
         ->willReturn(['id' => 'ORD-002', 'status' => 'created']);
 
@@ -49,8 +49,8 @@ it('creates order with optional ticket_number and expiration_time', function ():
         'amount' => 500,
         'device_id' => 'DEV-2',
         'ticket_number' => 'TK-999',
-        'expiration_time' => 300,
-    ]);
+        'expiration_time' => 'PT5M',
+    ], 'operation-2');
 
     expect($result['id'])->toBe('ORD-002');
 });
@@ -101,7 +101,7 @@ it('cancels an order and updates local status', function (): void {
         ));
 
     $service = new OrderService(new NullLogger(), $mpClient, $orderRepo);
-    $result = $service->cancel('ORD-005');
+    $result = $service->cancel('ORD-005', 'cancel-5');
 
     expect($result['status'])->toBe('canceled');
 });
@@ -119,7 +119,7 @@ it('refunds an order and updates local status', function (): void {
         ));
 
     $service = new OrderService(new NullLogger(), $mpClient, $orderRepo);
-    $result = $service->refund('ORD-006');
+    $result = $service->refund('ORD-006', null, 'refund-6');
 
     expect($result['status'])->toBe('refunded');
 });
@@ -128,26 +128,26 @@ it('refunds order with specific transaction_id', function (): void {
     $mpClient = $this->createMock(MercadoPagoClient::class);
     $mpClient->expects($this->once())
         ->method('refundOrder')
-        ->with('ORD-007', ['transactions' => [['id' => 'TXN-001']]])
+        ->with('ORD-007', ['transactions' => [['id' => 'TXN-001']]], 'refund-7')
         ->willReturn(['id' => 'ORD-007', 'status' => 'refunded']);
 
     $orderRepo = $this->createMock(OrderRepository::class);
     $orderRepo->method('update')->willReturn(true);
 
     $service = new OrderService(new NullLogger(), $mpClient, $orderRepo);
-    $service->refund('ORD-007', 'TXN-001');
+    $service->refund('ORD-007', 'TXN-001', 'refund-7');
 });
 
 it('refunds order without transaction_id sends null body', function (): void {
     $mpClient = $this->createMock(MercadoPagoClient::class);
     $mpClient->expects($this->once())
         ->method('refundOrder')
-        ->with('ORD-008', null)
+        ->with('ORD-008', null, 'refund-8')
         ->willReturn(['id' => 'ORD-008', 'status' => 'refunded']);
 
     $orderRepo = $this->createMock(OrderRepository::class);
     $orderRepo->method('update')->willReturn(true);
 
     $service = new OrderService(new NullLogger(), $mpClient, $orderRepo);
-    $service->refund('ORD-008');
+    $service->refund('ORD-008', null, 'refund-8');
 });

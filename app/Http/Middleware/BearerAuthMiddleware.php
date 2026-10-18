@@ -13,7 +13,7 @@ use Slim\Psr7\Response;
 /**
  * Bearer token authentication for /api/* routes.
  *
- * Compares the Authorization header against MP_ACCESS_TOKEN env var.
+ * Compares the Authorization header against API_AUTH_TOKEN env var.
  * The /webhook route is excluded — it uses HMAC signature validation instead.
  */
 class BearerAuthMiddleware implements MiddlewareInterface
@@ -29,9 +29,9 @@ class BearerAuthMiddleware implements MiddlewareInterface
         }
 
         $token = mb_substr($authHeader, 7);
-        $expectedToken = $_ENV['MP_ACCESS_TOKEN'] ?? '';
+        $expectedToken = $_ENV['API_AUTH_TOKEN'] ?? '';
 
-        if (!hash_equals($expectedToken, $token)) {
+        if ($expectedToken === '' || $token === '' || !hash_equals($expectedToken, $token)) {
             $response = new Response(401);
             $response->getBody()->write(json_encode(['error' => 'Invalid token']));
             return $response->withHeader('Content-Type', 'application/json');

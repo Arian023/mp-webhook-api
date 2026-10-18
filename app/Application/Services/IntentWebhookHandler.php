@@ -80,6 +80,7 @@ class IntentWebhookHandler
                     'intent_id' => $dataId,
                     'message' => $e->getMessage(),
                 ]);
+                throw $e;
             }
         }
 
@@ -117,7 +118,7 @@ class IntentWebhookHandler
                 'payment_id' => $paymentId,
                 'message' => $e->getMessage(),
             ]);
-            return;
+            throw $e;
         }
 
         $existingPayment = $this->paymentRepository->findByPaymentId($paymentId);

@@ -4,13 +4,7 @@
 .env
 .env.local
 .env.*.local
-composer.lock
 .php-cs-fixer.cache
 .phpunit.result.cache
-.idea/
-.junie/
-.ai/
-.mcp.json
-.claude/
 *.log
 logs/*.log

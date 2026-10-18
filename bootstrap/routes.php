@@ -8,6 +8,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\BearerAuthMiddleware;
+use App\Http\Middleware\ApiValidationMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -29,7 +30,7 @@ $app->group('/api', function (RouteCollectorProxy $group): void {
     $group->get('/orders/{id}', [OrderController::class, 'get']);
     $group->post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
     $group->post('/orders/{id}/refund', [OrderController::class, 'refund']);
-})->add(BearerAuthMiddleware::class);
+})->add(ApiValidationMiddleware::class)->add(BearerAuthMiddleware::class);
 
 // Health (no auth)
 $app->get('/health', [HealthController::class, 'check']);

@@ -31,8 +31,7 @@ class IntentRepository
 
     public function create(array $data): int
     {
-        $this->database->getConnection()->insert('intents', $data);
-        $id = (int) $this->database->getConnection()->id();
+        $id = $this->database->upsert('intents', $data);
         $this->logger->debug('Intent created', ['id' => $id, 'intent_id' => $data['intent_id'] ?? null]);
         return $id;
     }

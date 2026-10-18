@@ -11,7 +11,7 @@ https://www.mercadopago.com.ar/developers/es/docs/mp-point/overview
 
 ### Prerequisites
 
-- PHP 8.3+ with `pdo_mysql`, `json`, `mbstring`, `openssl` extensions
+- PHP 8.4.1+ with `pdo_mysql`, `json`, `mbstring`, `openssl` extensions
 - MariaDB 10.6+ or MySQL 8.0+ (for `json` column compatibility, otherwise adjust the `webhook_logs` table)
 - Composer 2.x
 
@@ -33,17 +33,18 @@ DB_NAME=mp_webhook
 DB_USER=root
 DB_PASS=
 
+API_AUTH_TOKEN=independent-local-credential
 MP_ACCESS_TOKEN=APP_USR-...
 MP_WEBHOOK_SECRET=your-webhook-secret
 ```
 
 ## Tech Stack
 
-- [**PHP**](https://www.php.net/) 8.3 or higher
+- [**PHP**](https://www.php.net/) 8.4.1 or higher
 - [**Slim 4**](https://www.slimframework.com/) — PSR-7/15 micro framework
 - [**PHP-DI**](https://php-di.org/doc/frameworks/slim.html) — Dependency injection container
 - [**Medoo**](https://medoo.in/) — Lightweight PDO-based database abstraction
-- [**Guzzle 7**](https://docs.guzzlephp.org/en/stable/index.html) — HTTP client with retry middleware
+- [**Guzzle 8**](https://docs.guzzlephp.org/en/stable/index.html) — HTTP client with retry middleware
 - [**Monolog 3**](https://seldaek.github.io/monolog/) — Logging to files, console, or database
 - [**Phinx**](https://phinx.org/) — Database migrations
 - [**Carbon**](https://carbon.nesbot.com/) — Date/time handling
@@ -62,15 +63,50 @@ MariaDB is available at `lerd-mariadb-11-8:3306` from the containers (user: `roo
 Alternatively, you can use [php.new](https://php.new/) or [Laravel Herd](https://herd.laravel.com/) on Windows / macOS to run the project quickly.
 
 ```bash
-# Code style (Pint)
+# Check code style without modifying files (Pint)
 composer lint
+
+# Apply formatting / refactorings (Rector, PHP 8.4)
+composer format
+composer refactor
 
 # Static analysis (PHPStan level 5)
 composer analyse
 
-# Both
+# Analysis, style and tests
 composer test
 ```
+
+Composer resolves dependencies for PHP 8.4.1 through `config.platform.php` to use
+maintained Symfony 8.1 components. CI checks PHP 8.4/8.5 with MySQL 8.4. After installation,
+run `composer check-platform-reqs` to validate the actual PHP runtime.
+
+### Deployment and API contract changes
+
+- Configure an independent `API_AUTH_TOKEN` for `/api/*` Bearer authentication;
+  `MP_ACCESS_TOKEN` is only used with Mercado Pago. There is no fallback. Your
+  private `.env` is not automatically modified.
+- Order mutations and all refunds require `X-Idempotency-Key` (1–64 letters,
+  digits, hyphens or underscores). Persist one key per business operation and reuse
+  it for all retries, including timeouts and local failures after provider success.
+  Use a different key for a new operation; never reuse a key with a different body.
+- Request bodies must be JSON objects with `Content-Type: application/json`.
+  Positive amounts: integer centavos for Intents, up to two decimal places for
+  Orders. Orders require an alphanumeric `external_reference` (1–64 characters,
+  hyphens/underscores allowed). `expiration_time` uses ISO 8601, `PT30S`–`PT3H`.
+- Failed webhook processing rolls back domain writes and returns **503** to allow
+  redelivery. Repeated charges are updated rather than duplicated. Invalid/unknown
+  events remain logged and ignored with 200 for compatibility. Both `orders` and
+  the legacy `order` topic are accepted.
+- Provider 400/404/409/422 errors retain their status; other provider failures map
+  to 502. Legacy Point mutations are not automatically retried.
+- `composer test:mysql` tests persistence using connection-local temporary tables
+  without changing application tables. Regular tests skip these unless
+  `RUN_MYSQL_TESTS=1`. Production: `APP_DEBUG=false`,
+  `SKIP_WEBHOOK_VALIDATION=false`, document root `public/`, and
+  `composer install --no-dev --optimize-autoloader`.
+
+See the [updated Spanish review](docs/REVIEW.es.md) for remaining limitations.
 
 ### Database
 

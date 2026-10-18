@@ -30,8 +30,7 @@ class PaymentRepository
 
     public function create(array $data): int
     {
-        $this->database->getConnection()->insert('payments', $data);
-        $id = (int) $this->database->getConnection()->id();
+        $id = $this->database->upsert('payments', $data);
         $this->logger->debug('Payment created', ['id' => $id, 'payment_id' => $data['payment_id'] ?? null]);
         return $id;
     }
@@ -60,7 +59,9 @@ class PaymentRepository
             ]);
         }
 
-        $this->database->getConnection()->insert('charges', $rows);
+        foreach ($rows as $row) {
+            $this->database->upsert('charges', $row);
+        }
 
         $this->logger->debug('Charges inserted', [
             'payment_id' => $paymentInternalId,
